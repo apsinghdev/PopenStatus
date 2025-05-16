@@ -27,7 +27,7 @@ func Connect() *gorm.DB {
 
 	// TODO: enable migrations later
 
-	// // Drop existing tables
+	// Drop existing tables
 	// db.Migrator().DropTable(
 	// 	&models.Organization{},
 	// 	&models.Service{},

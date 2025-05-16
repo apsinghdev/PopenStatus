@@ -1,5 +1,4 @@
-
-export type ServiceStatus = 'operational' | 'degraded' | 'outage';
+export type ServiceStatus = "operational" | "degraded" | "outage";
 
 export interface Service {
   id: string;
@@ -8,7 +7,11 @@ export interface Service {
   lastChecked: string; // ISO date string
 }
 
-export type IncidentStatus = 'investigating' | 'identified' | 'monitoring' | 'resolved';
+export type IncidentStatus =
+  | "investigating"
+  | "identified"
+  | "monitoring"
+  | "resolved";
 
 export interface IncidentUpdate {
   id: string;
@@ -23,14 +26,12 @@ export interface Incident {
   status: IncidentStatus;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
-  affectedServices: string[]; // Array of service IDs
-  updates: IncidentUpdate[];
 }
 
 export interface TimelineEvent {
   id: string;
   timestamp: string; // ISO date string
-  type: 'incident_created' | 'status_updated' | 'resolved';
+  type: "incident_created" | "status_updated" | "resolved";
   description: string;
   incidentId?: string;
 }
@@ -43,14 +44,16 @@ export interface StatusApiResponse {
 }
 
 export interface WebSocketStatusChangeEvent {
-  type: 'statusChange';
+  type: "statusChange";
   service: string; // service ID
   status: ServiceStatus;
 }
 
 export interface WebSocketIncidentUpdateEvent {
-  type: 'incidentUpdate';
+  type: "incidentUpdate";
   incident: Incident;
 }
 
-export type WebSocketEvent = WebSocketStatusChangeEvent | WebSocketIncidentUpdateEvent;
+export type WebSocketEvent =
+  | WebSocketStatusChangeEvent
+  | WebSocketIncidentUpdateEvent;

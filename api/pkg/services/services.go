@@ -32,3 +32,29 @@ func ListServices(c *fiber.Ctx) error {
 
 	return c.Status(200).JSON(services)
 }
+
+// func to create an incident
+func CreateIncident(c *fiber.Ctx) error {
+	var incident models.Incident
+	if err := c.BodyParser(&incident); err != nil {
+		return err
+	}
+
+	db := db.Connect()
+	db.Create(&incident)
+	return c.Status(201).JSON(incident)
+}
+
+// func to list incidents
+func ListIncidents(c *fiber.Ctx) error {
+	var incidents []models.Incident
+	db := db.Connect()
+	result := db.Find(&incidents)
+	if result.Error != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to fetch incidents",
+		})
+	}
+
+	return c.Status(200).JSON(incidents)
+}

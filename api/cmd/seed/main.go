@@ -88,6 +88,17 @@ func main() {
 				{Message: "Monitoring alerts triggered"},
 			},
 		},
+		{
+			Title:          "API Service Degraded Performance",
+			Description:    "Increased response times across endpoints",
+			Status:         "resolved",
+			Severity:       "medium",
+			ServiceID:      services[0].ID,
+			OrganizationID: org.ID,
+			Updates: []models.IncidentUpdate{
+				{Message: "Monitoring alerts triggered"},
+			},
+		},
 	}
 	dbConn.Create(&incidents)
 

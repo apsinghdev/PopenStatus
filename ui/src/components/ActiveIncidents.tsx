@@ -1,13 +1,11 @@
-
 import { Incident, Service } from "@/lib/types";
 import { IncidentDetails } from "@/components/IncidentDetails";
 
 interface ActiveIncidentsProps {
   incidents: Incident[];
-  services: Service[];
 }
 
-export function ActiveIncidents({ incidents, services }: ActiveIncidentsProps) {
+export function ActiveIncidents({ incidents }: ActiveIncidentsProps) {
   if (!incidents.length) {
     return (
       <div className="mb-8">
@@ -24,11 +22,7 @@ export function ActiveIncidents({ incidents, services }: ActiveIncidentsProps) {
       <h2 className="text-xl font-semibold mb-4">Active Incidents</h2>
       <div className="space-y-4">
         {incidents.map((incident) => (
-          <IncidentDetails 
-            key={incident.id} 
-            incident={incident} 
-            services={services} 
-          />
+          <IncidentDetails key={incident.id} incident={incident} />
         ))}
       </div>
     </div>

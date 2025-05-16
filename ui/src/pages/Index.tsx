@@ -3,16 +3,19 @@ import { StatusHeader } from "@/components/StatusHeader";
 import { ServiceGrid } from "@/components/ServiceGrid";
 import { ActiveIncidents } from "@/components/ActiveIncidents";
 import { IncidentTimeline } from "@/components/IncidentTimeline";
-import { getMockData, fetchServices } from "@/lib/mockData";
+import { getMockData, fetchServices, fetchIncidents } from "@/lib/mockData";
 import { useStatusWebSocket } from "@/hooks/useStatusWebSocket";
 import { StatusApiResponse } from "@/lib/types";
 import { useToast } from "@/components/ui/use-toast";
-import { convertResponseToServices } from "@/utils/utils";
+import {
+  convertResponseToServices,
+  convertResponseToIncidents,
+} from "@/utils/utils";
 export default function Index() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<StatusApiResponse | null>(null);
-  
+
   // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
@@ -22,9 +25,13 @@ export default function Index() {
         const responseData = getMockData();
         const services = await fetchServices();
         const convertedServices = convertResponseToServices(services);
+        const incidents = await fetchIncidents();
+        const convertedIncidents = convertResponseToIncidents(incidents);
+        // TODO: fetch incidents
         setData({
           ...responseData,
-          services: convertedServices
+          services: convertedServices,
+          incidents: convertedIncidents,
         });
         setLoading(false);
       } catch (error) {
@@ -37,16 +44,16 @@ export default function Index() {
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, [toast]);
-  
+
   // Use our custom WebSocket hook for real-time updates
   const { services, incidents, connected } = useStatusWebSocket(
     data?.services || [],
     data?.incidents || []
   );
-  
+
   // Show loading state
   if (loading) {
     return (
@@ -58,12 +65,12 @@ export default function Index() {
       </div>
     );
   }
-  
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <StatusHeader services={services} />
-        
+
         {connected && (
           <div className="flex items-center justify-center mb-4">
             <div className="flex items-center bg-green-100 text-green-800 rounded-full px-3 py-1 text-xs">
@@ -72,23 +79,25 @@ export default function Index() {
             </div>
           </div>
         )}
-        
+
         <main>
           <ServiceGrid services={services} />
-          
-          <ActiveIncidents 
-            incidents={incidents.filter(i => i.status !== 'resolved')}
-            services={services}
+
+          <ActiveIncidents
+            incidents={incidents.filter(
+              (i) => i.status === "investigating" || i.status === "identified"
+            )}
           />
-          
-          <IncidentTimeline 
-            events={data?.timelineEvents || []} 
-            incidents={incidents}
+
+          <IncidentTimeline
+            incidents={incidents.filter((i) => i.status === "resolved")}
           />
         </main>
-        
+
         <footer className="mt-12 text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Popen Status. All rights reserved.</p>
+          <p>
+            &copy; {new Date().getFullYear()} Popen Status. All rights reserved.
+          </p>
         </footer>
       </div>
     </div>
