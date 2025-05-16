@@ -84,7 +84,7 @@ export default function Index() {
         </main>
         
         <footer className="mt-12 text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Status Page. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Popen Status. All rights reserved.</p>
         </footer>
       </div>
     </div>
