@@ -1,14 +1,13 @@
-
 import { useEffect, useState } from "react";
 import { StatusHeader } from "@/components/StatusHeader";
 import { ServiceGrid } from "@/components/ServiceGrid";
 import { ActiveIncidents } from "@/components/ActiveIncidents";
 import { IncidentTimeline } from "@/components/IncidentTimeline";
-import { getMockData } from "@/lib/mockData";
+import { getMockData, fetchServices } from "@/lib/mockData";
 import { useStatusWebSocket } from "@/hooks/useStatusWebSocket";
 import { StatusApiResponse } from "@/lib/types";
 import { useToast } from "@/components/ui/use-toast";
-
+import { convertResponseToServices } from "@/utils/utils";
 export default function Index() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -21,7 +20,12 @@ export default function Index() {
         // In a real app, this would be an API call
         // For now, we'll use our mock data
         const responseData = getMockData();
-        setData(responseData);
+        const services = await fetchServices();
+        const convertedServices = convertResponseToServices(services);
+        setData({
+          ...responseData,
+          services: convertedServices
+        });
         setLoading(false);
       } catch (error) {
         console.error("Failed to fetch status data:", error);
