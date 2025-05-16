@@ -9,6 +9,6 @@ func ServiceRoutes(app *fiber.App) {
 	api := app.Group("/api")
 	servicesGroup := api.Group("/services")
 
-	servicesGroup.Post("/", services.CreateService)
-	servicesGroup.Get("/", services.ListServices)
+	servicesGroup.Post("/create", services.CreateService)
+	servicesGroup.Get("/list", services.ListServices)
 }

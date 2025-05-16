@@ -1,8 +1,6 @@
 package services
 
 import (
-	"strconv"
-
 	"github.com/apsinghdev/PopenStatus/api/pkg/db"
 	"github.com/apsinghdev/PopenStatus/api/pkg/models"
 	"github.com/gofiber/fiber/v2"
@@ -14,8 +12,7 @@ func CreateService(c *fiber.Ctx) error {
 	if err := c.BodyParser(&service); err != nil {
 		return err
 	}
-	orgID, _ := strconv.ParseUint(c.Get("orgID"), 10, 32)
-	service.OrganizationID = uint(orgID) // Enforce tenant isolation
+	service.UserID = c.Get("UserID") // Use Clerk user ID directly
 
 	db := db.Connect()
 	db.Create(&service)
@@ -24,10 +21,14 @@ func CreateService(c *fiber.Ctx) error {
 
 // func to list services
 func ListServices(c *fiber.Ctx) error {
-	orgID, _ := strconv.ParseUint(c.Get("orgID"), 10, 32)
 	var services []models.Service
-
 	db := db.Connect()
-	db.Where("organization_id = ?", uint(orgID)).Find(&services)
+	result := db.Find(&services)
+	if result.Error != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to fetch services",
+		})
+	}
+
 	return c.Status(200).JSON(services)
 }

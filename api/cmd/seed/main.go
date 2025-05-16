@@ -9,10 +9,11 @@ import (
 )
 
 func main() {
-	db := db.Connect()
+	// Connect to the database
+	dbConn := db.Connect()
 
 	// Auto migrate all models
-	db.AutoMigrate(
+	dbConn.AutoMigrate(
 		&models.Organization{},
 		&models.Service{},
 		&models.Incident{},
@@ -26,26 +27,43 @@ func main() {
 		Name: "Tech Corp",
 		Slug: "tech-corp",
 	}
-	db.Create(&org)
+	dbConn.Create(&org)
 
-	// Create services
+	// Add team members (using fake Clerk user IDs)
+	members := []models.OrganizationMember{
+		{
+			ClerkUserID:    "user_2fDz8sLk9PZJmRnQ4tGbWALeExi",
+			OrganizationID: org.ID,
+			Role:           "admin",
+		},
+		{
+			ClerkUserID:    "user_5tHj4kLm7PdRnQ9WzVbCXeExiAl",
+			OrganizationID: org.ID,
+			Role:           "member",
+		},
+	}
+	dbConn.Create(&members)
+
+	// Create services under the organization
 	services := []models.Service{
 		{
 			Name:           "API Service",
 			Description:    "Core application API",
 			Status:         "operational",
+			UserID:         "user_2fDz8sLk9PZJmRnQ4tGbWALeExi",
 			OrganizationID: org.ID,
 		},
 		{
 			Name:           "Database Cluster",
 			Description:    "Primary PostgreSQL database",
 			Status:         "degraded_performance",
+			UserID:         "user_2fDz8sLk9PZJmRnQ4tGbWALeExi",
 			OrganizationID: org.ID,
 		},
 	}
-	db.Create(&services)
+	dbConn.Create(&services)
 
-	// Create incidents with updates
+	// Create incidents with nested updates
 	incidents := []models.Incident{
 		{
 			Title:          "API Latency Spike",
@@ -71,7 +89,7 @@ func main() {
 			},
 		},
 	}
-	db.Create(&incidents)
+	dbConn.Create(&incidents)
 
 	// Create maintenance window
 	maintenance := models.Maintenance{
@@ -83,22 +101,7 @@ func main() {
 		ServiceID:      services[1].ID,
 		OrganizationID: org.ID,
 	}
-	db.Create(&maintenance)
-
-	// Add team members (using fake Clerk user IDs)
-	members := []models.OrganizationMember{
-		{
-			ClerkUserID:    "user_2fDz8sLk9PZJmRnQ4tGbWALeExi",
-			OrganizationID: org.ID,
-			Role:           "admin",
-		},
-		{
-			ClerkUserID:    "user_5tHj4kLm7PdRnQ9WzVbCXeExiAl",
-			OrganizationID: org.ID,
-			Role:           "member",
-		},
-	}
-	db.Create(&members)
+	dbConn.Create(&maintenance)
 
 	fmt.Println("✅ Successfully seeded the database")
 }

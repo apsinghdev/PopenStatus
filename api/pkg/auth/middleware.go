@@ -44,6 +44,8 @@ func ClerkMiddleware() fiber.Handler {
 
 		// Attach claims to context
 		c.Set("userID", claims.Claims.Subject)
+		// For now, use a default organization ID since Clerk doesn't provide it directly
+		c.Set("organizationID", "1")
 		return c.Next()
 	}
 }
