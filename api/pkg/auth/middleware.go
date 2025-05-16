@@ -3,6 +3,7 @@ package auth
 import (
 	"log"
 	"os"
+	"strings"
 
 	// "github.com/auth0/go-jwt-middleware/v2/validator"
 	"github.com/clerkinc/clerk-sdk-go/clerk"
@@ -19,13 +20,28 @@ func ClerkMiddleware() fiber.Handler {
 	client, _ := clerk.NewClient(os.Getenv("CLERK_SECRET_KEY"))
 
 	return func(c *fiber.Ctx) error {
-		sessToken := c.Get("Authorization")
-		claims, err := client.VerifyToken(sessToken)
-		if err != nil {
+		authHeader := c.Get("Authorization")
+		if authHeader == "" {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Unauthorized",
+				"error": "No authorization header",
 			})
 		}
+
+		// Extract token from "Bearer <token>"
+		tokenParts := strings.Split(authHeader, " ")
+		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Invalid authorization header format",
+			})
+		}
+
+		claims, err := client.VerifyToken(tokenParts[1])
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Invalid token",
+			})
+		}
+
 		// Attach claims to context
 		c.Set("userID", claims.Claims.Subject)
 		return c.Next()
