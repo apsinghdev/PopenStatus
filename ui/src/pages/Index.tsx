@@ -90,6 +90,7 @@ export default function Index() {
           />
 
           <IncidentTimeline
+            events={data?.timelineEvents || []}
             incidents={incidents.filter((i) => i.status === "resolved")}
           />
         </main>

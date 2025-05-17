@@ -100,46 +100,46 @@ export const mockIncidents: Incident[] = [
 ];
 
 export const mockTimelineEvents: TimelineEvent[] = [
-  // {
-  //   id: '1',
-  //   timestamp: subHours(now, 2).toISOString(),
-  //   type: 'incident_created',
-  //   description: 'Notification System Outage began',
-  //   incidentId: '2',
-  // },
-  // {
-  //   id: '2',
-  //   timestamp: subHours(now, 1).toISOString(),
-  //   type: 'incident_created',
-  //   description: 'Authentication Service Degraded Performance began',
-  //   incidentId: '1',
-  // },
-  // {
-  //   id: '3',
-  //   timestamp: subMinutes(now, 45).toISOString(),
-  //   type: 'status_updated',
-  //   description: 'Notification System Outage - Root cause identified',
-  //   incidentId: '2',
-  // },
-  // {
-  //   id: '4',
-  //   timestamp: subMinutes(now, 30).toISOString(),
-  //   type: 'status_updated',
-  //   description: 'Authentication Service - Issue identified',
-  //   incidentId: '1',
-  // },
-  // {
-  //   id: '5',
-  //   timestamp: subDays(now, 1).toISOString(),
-  //   type: 'resolved',
-  //   description: 'API Rate Limiting Issue Resolved',
-  // },
-  // {
-  //   id: '6',
-  //   timestamp: subDays(now, 2).toISOString(),
-  //   type: 'resolved',
-  //   description: 'CDN Propagation Delay Resolved',
-  // },
+  {
+    id: '1',
+    timestamp: subHours(now, 2).toISOString(),
+    type: 'incident_created',
+    description: 'Notification System Outage began',
+    incidentId: '2',
+  },
+  {
+    id: '2',
+    timestamp: subHours(now, 1).toISOString(),
+    type: 'incident_created',
+    description: 'Authentication Service Degraded Performance began',
+    incidentId: '1',
+  },
+  {
+    id: '3',
+    timestamp: subMinutes(now, 45).toISOString(),
+    type: 'status_updated',
+    description: 'Notification System Outage - Root cause identified',
+    incidentId: '2',
+  },
+  {
+    id: '4',
+    timestamp: subMinutes(now, 30).toISOString(),
+    type: 'status_updated',
+    description: 'Authentication Service - Issue identified',
+    incidentId: '1',
+  },
+  {
+    id: '5',
+    timestamp: subDays(now, 1).toISOString(),
+    type: 'resolved',
+    description: 'API Rate Limiting Issue Resolved',
+  },
+  {
+    id: '6',
+    timestamp: subDays(now, 2).toISOString(),
+    type: 'resolved',
+    description: 'CDN Propagation Delay Resolved',
+  },
 ];
 
 export const getMockData = (): StatusApiResponse => {
