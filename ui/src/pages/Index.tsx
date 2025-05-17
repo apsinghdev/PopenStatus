@@ -27,11 +27,24 @@ export default function Index() {
         const convertedServices = convertResponseToServices(services);
         const incidents = await fetchIncidents();
         const convertedIncidents = convertResponseToIncidents(incidents);
-        // TODO: fetch incidents
+        // TODO: separate the resolved incidents from convertedIncidents
+        const resolvedIncidents = convertedIncidents.filter(
+          (incident) => incident.status === "resolved"
+        );
+
+        const timelineEvents = resolvedIncidents.map(incident => ({
+          id: incident.id,
+          timestamp: incident.updatedAt,
+          type: "resolved" as const,
+          description: `${incident.title} has been resolved`,
+          incidentId: incident.id
+        }));
+
         setData({
           ...responseData,
           services: convertedServices,
           incidents: convertedIncidents,
+          timelineEvents,
         });
         setLoading(false);
       } catch (error) {
