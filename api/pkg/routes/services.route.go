@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"github.com/apsinghdev/PopenStatus/api/pkg/handlers"
 	"github.com/apsinghdev/PopenStatus/api/pkg/services"
 	"github.com/gofiber/fiber/v2"
 )
@@ -18,4 +19,5 @@ func ServiceRoutes(app *fiber.App) {
 	incidentsGroup.Get("/list", services.ListIncidents)
 
 	orgGroup.Get("/:slug/status", services.GetOrganizationStatus)
+	orgGroup.Get("/list", handlers.ListOrganizations)
 }
