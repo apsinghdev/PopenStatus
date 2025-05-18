@@ -12,20 +12,31 @@ func main() {
 	// Connect to the database
 	dbConn := db.Connect()
 
-	// Auto migrate all models
-	dbConn.AutoMigrate(
-		&models.Organization{},
-		&models.Service{},
-		&models.Incident{},
-		&models.IncidentUpdate{},
-		&models.Maintenance{},
-		&models.OrganizationMember{},
-	)
+	// // Drop existing tables
+	// dbConn.Migrator().DropTable(
+	// 	&models.Organization{},
+	// 	&models.Service{},
+	// 	&models.Incident{},
+	// 	&models.IncidentUpdate{},
+	// 	&models.Maintenance{},
+	// 	&models.OrganizationMember{},
+	// )
+
+	// // Auto migrate all models
+	// dbConn.AutoMigrate(
+	// 	&models.Organization{},
+	// 	&models.Service{},
+	// 	&models.Incident{},
+	// 	&models.IncidentUpdate{},
+	// 	&models.Maintenance{},
+	// 	&models.OrganizationMember{},
+	// )
 
 	// Create demo organization
 	org := models.Organization{
-		Name: "Tech Corp",
-		Slug: "tech-corp",
+		ClerkOrgID: "org_2fDz8sLk9PZJmRnQ4tGbWALeExi", // Example Clerk org ID
+		Name:       "Tech Corp",
+		Slug:       "tech-corp",
 	}
 	dbConn.Create(&org)
 

@@ -7,12 +7,19 @@ import (
 )
 
 type Organization struct {
-	gorm.Model
-	Name      string               `gorm:"uniqueIndex;not null"` // e.g., "Acme Corp"
-	Slug      string               `gorm:"uniqueIndex;not null"` // URL-friendly ID: "acme-corp"
-	Services  []Service            `gorm:"foreignKey:OrganizationID"`
-	Incidents []Incident           `gorm:"foreignKey:OrganizationID"`
-	Members   []OrganizationMember `gorm:"foreignKey:OrganizationID"`
+	ID uint `gorm:"primarykey" json:"id"`
+
+	// Clerk organization ID
+	ClerkOrgID string `gorm:"uniqueIndex;not null" json:"clerk_org_id"`
+
+	// Organization details
+	Name string `gorm:"not null" json:"name"`
+	Slug string `gorm:"uniqueIndex;not null" json:"slug"`
+
+	// Relations
+	Services  []Service            `gorm:"foreignKey:OrganizationID" json:"services,omitempty"`
+	Incidents []Incident           `gorm:"foreignKey:OrganizationID" json:"incidents,omitempty"`
+	Members   []OrganizationMember `gorm:"foreignKey:OrganizationID" json:"members,omitempty"`
 }
 
 type Service struct {

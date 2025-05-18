@@ -10,6 +10,8 @@ import (
 	"gorm.io/gorm"
 )
 
+var dbInstance *gorm.DB
+
 func Connect() *gorm.DB {
 	// Load env variables from .env file
 	err := godotenv.Load()
@@ -23,11 +25,13 @@ func Connect() *gorm.DB {
 		panic("Failed to connect to database")
 	}
 
+	dbInstance = db
+
 	fmt.Println("✅ Successfully connected to the database")
 
 	// TODO: enable migrations later
 
-	// Drop existing tables
+	// // Drop existing tables
 	// db.Migrator().DropTable(
 	// 	&models.Organization{},
 	// 	&models.Service{},
@@ -53,4 +57,12 @@ func Connect() *gorm.DB {
 	fmt.Println("✅ Successfully migrated the database")
 
 	return db
+}
+
+// GetDB returns the database instance
+func GetDB() *gorm.DB {
+	if dbInstance == nil {
+		panic("Database not initialized")
+	}
+	return dbInstance
 }
