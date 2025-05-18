@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Service } from "@/lib/types";
 import { getRelativeTimeString } from "@/lib/mockData";
@@ -29,7 +28,8 @@ export function ServiceCard({ service }: ServiceCardProps) {
     },
   };
 
-  const config = statusConfig[status];
+  // Default to operational if status is undefined or invalid
+  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.operational;
 
   return (
     <Card className="hover:shadow-md transition-shadow duration-300">

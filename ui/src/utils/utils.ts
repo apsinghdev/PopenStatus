@@ -1,12 +1,6 @@
 import { subMinutes } from "date-fns";
-import { ServiceStatus, IncidentStatus } from "@/lib/types";
+import { Service, Incident, TimelineEvent, ServiceStatus, IncidentStatus } from "@/lib/types";
 
-type Service = {
-  id: string;
-  name: string;
-  status: ServiceStatus;
-  lastChecked: string;
-};
 
 type RawService = {
   ID: number;
@@ -78,7 +72,6 @@ export function convertResponseToIncidents(
   const statusMap: Record<string, IncidentStatus> = {
     investigating: "investigating",
     identified: "identified",
-    monitoring: "monitoring",
     resolved: "resolved",
   };
 
@@ -89,4 +82,55 @@ export function convertResponseToIncidents(
     createdAt: incident.CreatedAt,
     updatedAt: incident.UpdatedAt,
   }));
+}
+
+
+type RawData = any;
+
+export function convertResponseToStatusApiResponse(rawData: RawData): {
+  services: Service[];
+  incidents: Incident[];
+  organization: { id: number; name: string; slug: string };
+  timelineEvents: TimelineEvent[];
+} {
+  const services: Service[] = rawData.services.map((s: any) => ({
+    id: String(s.ID),
+    name: s.Name,
+    status: s.Status as Service["status"],
+    lastChecked: new Date().toISOString(), // or use s.UpdatedAt if available
+  }));
+
+  const incidents: Incident[] = rawData.incidents.map((i: any) => ({
+    id: String(i.ID),
+    title: i.Title,
+    status: i.Status as IncidentStatus,
+    createdAt: i.CreatedAt,
+    updatedAt:
+      i.Updates && i.Updates.length > 0
+        ? i.Updates[i.Updates.length - 1].CreatedAt
+        : i.CreatedAt,
+  }));
+
+  const timelineEvents: TimelineEvent[] = incidents
+    .filter((i) => i.status === "resolved")
+    .map((i) => ({
+      id: i.id,
+      timestamp: i.updatedAt,
+      type: "resolved",
+      description: `${i.title} has been resolved`,
+      incidentId: i.id,
+    }));
+
+  const organization = {
+    id: rawData.organization.id,
+    name: rawData.organization.name,
+    slug: rawData.organization.slug,
+  };
+
+  return {
+    services,
+    incidents,
+    organization,
+    timelineEvents,
+  };
 }

@@ -17,7 +17,7 @@ export function useStatusWebSocket(
     // Update the state when the initial data changes (e.g., after a refresh)
     setServices(initialServices);
     setIncidents(initialIncidents);
-  }, [initialServices, initialIncidents]);
+  }, []); //initialServices, initialIncidents]);
   
   // Simulate WebSocket connection for the demo
   useEffect(() => {
@@ -98,7 +98,7 @@ export function useStatusWebSocket(
         wsRef.current.close();
       }
     };
-  }, [services]);
+  }, []); //[services]);
   
   return {
     services,

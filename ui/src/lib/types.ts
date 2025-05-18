@@ -7,11 +7,7 @@ export interface Service {
   lastChecked: string; // ISO date string
 }
 
-export type IncidentStatus =
-  | "investigating"
-  | "identified"
-  | "monitoring"
-  | "resolved";
+export type IncidentStatus = "investigating" | "identified" | "resolved";
 
 export interface IncidentUpdate {
   id: string;
@@ -31,7 +27,7 @@ export interface Incident {
 export interface TimelineEvent {
   id: string;
   timestamp: string; // ISO date string
-  type: "incident_created" | "status_updated" | "resolved";
+  type: "resolved";
   description: string;
   incidentId?: string;
 }
