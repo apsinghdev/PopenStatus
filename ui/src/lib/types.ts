@@ -5,6 +5,7 @@ export interface Service {
   name: string;
   status: ServiceStatus;
   lastChecked: string; // ISO date string
+  description?: string;
 }
 
 export type IncidentStatus = "investigating" | "identified" | "resolved";

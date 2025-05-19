@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Service, ServiceStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -37,6 +36,7 @@ import {
 import { useForm } from "react-hook-form";
 import { CheckCircle, AlertTriangle, AlertCircle, Pencil, Trash2, Plus } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 interface ServiceManagementProps {
   services: Service[];
@@ -46,6 +46,7 @@ type ServiceFormValues = {
   id?: string;
   name: string;
   status: ServiceStatus;
+  description: string;
 };
 
 export default function ServiceManagement({ services }: ServiceManagementProps) {
@@ -56,7 +57,8 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
   const form = useForm<ServiceFormValues>({
     defaultValues: {
       name: "",
-      status: "operational"
+      status: "operational",
+      description: ""
     }
   });
   
@@ -69,6 +71,7 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
               ...service, 
               name: data.name, 
               status: data.status,
+              description: data.description,
               lastChecked: new Date().toISOString()
             } 
           : service
@@ -84,6 +87,7 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
         id: `service-${Date.now()}`,
         name: data.name,
         status: data.status,
+        description: data.description,
         lastChecked: new Date().toISOString()
       };
       setLocalServices([...localServices, newService]);
@@ -101,7 +105,8 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
     setCurrentService(service);
     form.reset({
       name: service.name,
-      status: service.status
+      status: service.status,
+      description: service.description || ""
     });
     setIsOpen(true);
   };
@@ -119,7 +124,8 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
     setCurrentService(null);
     form.reset({
       name: "",
-      status: "operational"
+      status: "operational",
+      description: ""
     });
     setIsOpen(true);
   };
@@ -241,6 +247,23 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
                     <FormControl>
                       <Input 
                         placeholder="e.g. Website, API, Database" 
+                        {...field} 
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Describe the service and its purpose..."
+                        className="min-h-[100px]"
                         {...field} 
                       />
                     </FormControl>
