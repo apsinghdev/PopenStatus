@@ -2,22 +2,22 @@ import { useState, useEffect } from "react";
 import { Service, ServiceStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { useUser, useOrganization } from "@clerk/clerk-react";
-import { 
+import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow 
+  TableRow,
 } from "@/components/ui/table";
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,15 +27,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
+import {
   Form,
   FormControl,
   FormField,
   FormItem,
-  FormLabel
+  FormLabel,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { CheckCircle, AlertTriangle, AlertCircle, Pencil, Trash2, Plus } from "lucide-react";
+import {
+  CheckCircle,
+  AlertTriangle,
+  AlertCircle,
+  Pencil,
+  Trash2,
+  Plus,
+} from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -50,93 +57,105 @@ type ServiceFormValues = {
   description: string;
 };
 
-export default function ServiceManagement({ services: initialServices }: ServiceManagementProps) {
+export default function ServiceManagement({
+  services: initialServices,
+}: ServiceManagementProps) {
   const { user } = useUser();
   const { organization } = useOrganization();
   const [isOpen, setIsOpen] = useState(false);
   const [currentService, setCurrentService] = useState<Service | null>(null);
-  const [localServices, setLocalServices] = useState<Service[]>(initialServices);
-  
+  const [localServices, setLocalServices] =
+    useState<Service[]>(initialServices);
+
   const form = useForm<ServiceFormValues>({
     defaultValues: {
       name: "",
       status: "operational",
-      description: ""
+      description: "",
     },
-    mode: "onChange"
+    mode: "onChange",
   });
-  
+
   useEffect(() => {
     const fetchServices = async () => {
       if (!organization) {
-        console.log('No organization found');
+        console.log("No organization found");
         return;
       }
 
-      console.log('Current organization:', organization);
+      console.log("Current organization:", organization);
       const orgId = organization.id;
-      
+
       if (!orgId) {
-        console.error('Organization ID is missing');
+        console.error("Organization ID is missing");
         toast({
           title: "Error",
           description: "Organization ID is missing. Please try again.",
-          variant: "destructive"
+          variant: "destructive",
         });
         return;
       }
 
       try {
-        console.log('Fetching services for organization:', orgId);
+        console.log("Fetching services for organization:", orgId);
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/services/list?organization_id=${orgId}`
+          `${
+            import.meta.env.VITE_API_URL
+          }/services/list?organization_id=${orgId}`
         );
-        
+
         if (!response.ok) {
           const errorData = await response.json().catch(() => null);
-          console.error('API Error Response:', {
+          console.error("API Error Response:", {
             status: response.status,
             statusText: response.statusText,
-            errorData
+            errorData,
           });
-          throw new Error(`Failed to fetch services: ${response.status} ${response.statusText}`);
+          throw new Error(
+            `Failed to fetch services: ${response.status} ${response.statusText}`
+          );
         }
 
         const services = await response.json();
-        console.log('Fetched services:', services);
+        console.log("Fetched services:", services);
         if (Array.isArray(services)) {
           // Transform the services data to match our interface
-          const transformedServices = services.map(service => ({
+          const transformedServices = services.map((service) => ({
             id: service.ID?.toString() || service.id?.toString(),
             name: service.Name || service.name,
-            status: (service.Status || service.status || 'operational') as ServiceStatus,
-            lastChecked: service.UpdatedAt || service.lastChecked || new Date().toISOString(),
-            description: service.Description || service.description
+            status: (service.Status ||
+              service.status ||
+              "operational") as ServiceStatus,
+            lastChecked:
+              service.UpdatedAt ||
+              service.lastChecked ||
+              new Date().toISOString(),
+            description: service.Description || service.description,
           }));
-          console.log('Transformed services:', transformedServices);
+          console.log("Transformed services:", transformedServices);
           setLocalServices(transformedServices);
         } else {
-          console.error('Received non-array services data:', services);
+          console.error("Received non-array services data:", services);
         }
       } catch (error) {
-        console.error('Error fetching services:', error);
+        console.error("Error fetching services:", error);
         toast({
           title: "Error",
           description: "Failed to fetch services. Please try again.",
-          variant: "destructive"
+          variant: "destructive",
         });
       }
     };
 
     fetchServices();
   }, [organization]);
-  
+
   const onSubmit = async (data: ServiceFormValues) => {
-    if (!data.name || !data.status || !data.description) {
+    if (!data.name && !data.status && !data.description) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive"
+        description: "Please fill in at least one field.",
+        variant: "destructive",
       });
       return;
     }
@@ -145,7 +164,7 @@ export default function ServiceManagement({ services: initialServices }: Service
       toast({
         title: "Error",
         description: "User or organization not found. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -155,96 +174,155 @@ export default function ServiceManagement({ services: initialServices }: Service
       toast({
         title: "Error",
         description: "Organization ID is missing. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     try {
-      console.log('Creating service with organization ID:', orgId);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/services/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      if (currentService) {
+        // Update existing service
+        console.log("Updating service:", currentService.id);
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/services/${
+            currentService.id
+          }?organization_id=${orgId}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: data.name,
+              description: data.description,
+              status: data.status,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to update service");
+        }
+
+        const updatedService = await response.json();
+        console.log("Service updated:", updatedService);
+
+        // Update the local state with the updated service
+        setLocalServices((prevServices) =>
+          prevServices.map((service) =>
+            service.id === currentService.id
+              ? {
+                  ...service,
+                  name: data.name || service.name,
+                  status: data.status || service.status,
+                  description: data.description || service.description,
+                  lastChecked: new Date().toISOString(),
+                }
+              : service
+          )
+        );
+
+        toast({
+          title: "Service updated",
+          description: `${
+            data.name || currentService.name
+          } has been updated successfully.`,
+        });
+      } else {
+        // Create new service
+        console.log("Creating service with organization ID:", orgId);
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/services/create`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: data.name,
+              description: data.description,
+              status: data.status,
+              user_id: user.id,
+              OrganizationID: orgId,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to create service");
+        }
+
+        const newService = await response.json();
+        console.log("New service created:", newService);
+
+        // Ensure the new service has all required fields
+        const serviceToAdd = {
+          ...newService,
           name: data.name,
-          description: data.description,
-          status: data.status,
-          user_id: user.id,
-          OrganizationID: orgId
-        }),
-      });
+          organization_id: orgId,
+          lastChecked: newService.lastChecked || new Date().toISOString(),
+          status: newService.status || data.status,
+        };
 
-      if (!response.ok) {
-        throw new Error('Failed to create service');
+        console.log("Service to add:", serviceToAdd);
+
+        // Update the local state with the new service
+        setLocalServices((prevServices) => {
+          const updatedServices = [...prevServices, serviceToAdd];
+          console.log("Updated services:", updatedServices);
+          return updatedServices;
+        });
+
+        toast({
+          title: "Service created",
+          description: `${data.name} has been added successfully.`,
+        });
       }
-
-      const newService = await response.json();
-      console.log('New service created:', newService);
-
-      // Ensure the new service has all required fields
-      const serviceToAdd = {
-        ...newService,
-        name: data.name,
-        organization_id: orgId,
-        lastChecked: newService.lastChecked || new Date().toISOString(),
-        status: newService.status || data.status
-      };
-
-      console.log('Service to add:', serviceToAdd);
-
-      // Update the local state with the new service
-      setLocalServices(prevServices => {
-        const updatedServices = [...prevServices, serviceToAdd];
-        console.log('Updated services:', updatedServices);
-        return updatedServices;
-      });
-      
-      toast({
-        title: "Service created",
-        description: `${data.name} has been added successfully.`,
-      });
 
       // Close the dialog and reset form
       setIsOpen(false);
       setCurrentService(null);
       form.reset();
     } catch (error) {
-      console.error('Error creating service:', error);
+      console.error("Error:", error);
       toast({
         title: "Error",
-        description: "Failed to create service. Please try again.",
-        variant: "destructive"
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to process service. Please try again.",
+        variant: "destructive",
       });
     }
   };
-  
+
   const editService = (service: Service) => {
     setCurrentService(service);
     form.reset({
       name: service.name,
       status: service.status,
-      description: service.description || ""
+      description: service.description || "",
     });
     setIsOpen(true);
   };
-  
+
   const deleteService = async (id: string) => {
     if (!organization) {
       toast({
         title: "Error",
         description: "Organization not found. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/services/${id}?organization_id=${organization.id}`,
+        `${import.meta.env.VITE_API_URL}/services/${id}?organization_id=${
+          organization.id
+        }`,
         {
-          method: 'DELETE',
+          method: "DELETE",
         }
       );
 
@@ -252,43 +330,48 @@ export default function ServiceManagement({ services: initialServices }: Service
         const errorData = await response.json().catch(() => null);
         if (response.status === 404) {
           // If service not found, remove it from local state anyway
-          setLocalServices(localServices.filter(service => service.id !== id));
+          setLocalServices(
+            localServices.filter((service) => service.id !== id)
+          );
           toast({
             title: "Service deleted",
             description: "The service has been removed from the list.",
           });
           return;
         }
-        throw new Error(errorData?.error || 'Failed to delete service');
+        throw new Error(errorData?.error || "Failed to delete service");
       }
 
-      setLocalServices(localServices.filter(service => service.id !== id));
+      setLocalServices(localServices.filter((service) => service.id !== id));
       toast({
         title: "Service deleted",
         description: "The service has been removed successfully.",
       });
     } catch (error) {
-      console.error('Error deleting service:', error);
+      console.error("Error deleting service:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete service. Please try again.",
-        variant: "destructive"
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to delete service. Please try again.",
+        variant: "destructive",
       });
     }
   };
-  
+
   const openCreateDialog = () => {
     setCurrentService(null);
     form.reset({
       name: "",
       status: "operational",
-      description: ""
+      description: "",
     });
     setIsOpen(true);
   };
-  
+
   const getStatusIcon = (status: ServiceStatus) => {
-    switch(status) {
+    switch (status) {
       case "operational":
         return <CheckCircle className="h-5 w-5 text-green-500" />;
       case "degraded":
@@ -301,9 +384,9 @@ export default function ServiceManagement({ services: initialServices }: Service
         return null;
     }
   };
-  
+
   const getStatusText = (status: ServiceStatus) => {
-    switch(status) {
+    switch (status) {
       case "operational":
         return "Operational";
       case "degraded":
@@ -316,7 +399,7 @@ export default function ServiceManagement({ services: initialServices }: Service
         return status;
     }
   };
-  
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -326,7 +409,7 @@ export default function ServiceManagement({ services: initialServices }: Service
           Add Service
         </Button>
       </div>
-      
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -340,15 +423,22 @@ export default function ServiceManagement({ services: initialServices }: Service
           <TableBody>
             {!localServices || localServices.length === 0 ? (
               <TableRow key="no-services">
-                <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                <TableCell
+                  colSpan={4}
+                  className="text-center py-6 text-muted-foreground"
+                >
                   No services found. Create a service to get started.
                 </TableCell>
               </TableRow>
             ) : (
               localServices.map((service, index) => (
-                <TableRow key={`${service.name || 'unnamed'}-${service.status || 'unknown'}-${service.lastChecked || Date.now()}-${index}`}>
+                <TableRow
+                  key={`${service.name || "unnamed"}-${
+                    service.status || "unknown"
+                  }-${service.lastChecked || Date.now()}-${index}`}
+                >
                   <TableCell className="font-medium">
-                    {service.name || 'Unnamed Service'}
+                    {service.name || "Unnamed Service"}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -357,20 +447,22 @@ export default function ServiceManagement({ services: initialServices }: Service
                     </div>
                   </TableCell>
                   <TableCell>
-                    {service.lastChecked ? new Date(service.lastChecked).toLocaleString() : 'Never'}
+                    {service.lastChecked
+                      ? new Date(service.lastChecked).toLocaleString()
+                      : "Never"}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => editService(service)}
                       >
                         <Pencil className="h-4 w-4" />
                         <span className="sr-only">Edit</span>
                       </Button>
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="icon"
                         onClick={() => deleteService(service.id)}
                       >
@@ -385,7 +477,7 @@ export default function ServiceManagement({ services: initialServices }: Service
           </TableBody>
         </Table>
       </div>
-      
+
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -393,12 +485,12 @@ export default function ServiceManagement({ services: initialServices }: Service
               {currentService ? "Edit Service" : "Create New Service"}
             </DialogTitle>
             <DialogDescription>
-              {currentService 
-                ? "Update the service details below." 
+              {currentService
+                ? "Update the service details below."
                 : "Enter the details for the new service."}
             </DialogDescription>
           </DialogHeader>
-          
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -406,48 +498,45 @@ export default function ServiceManagement({ services: initialServices }: Service
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Service Name *</FormLabel>
+                    <FormLabel>Service Name</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="e.g. Website, API, Database" 
+                      <Input
+                        placeholder="e.g. Website, API, Database"
                         {...field}
                         value={field.value || ""}
-                        required
                       />
                     </FormControl>
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description *</FormLabel>
+                    <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Textarea 
+                      <Textarea
                         placeholder="Describe the service and its purpose..."
                         className="min-h-[100px]"
                         {...field}
                         value={field.value || ""}
-                        required
                       />
                     </FormControl>
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status *</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <FormLabel>Status</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
                       value={field.value || "operational"}
-                      required
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -456,15 +545,21 @@ export default function ServiceManagement({ services: initialServices }: Service
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="operational">Operational</SelectItem>
-                        <SelectItem value="degraded">Degraded Performance</SelectItem>
-                        <SelectItem value="partial_outage">Partial Outage</SelectItem>
-                        <SelectItem value="major_outage">Major Outage</SelectItem>
+                        <SelectItem value="degraded">
+                          Degraded Performance
+                        </SelectItem>
+                        <SelectItem value="partial_outage">
+                          Partial Outage
+                        </SelectItem>
+                        <SelectItem value="major_outage">
+                          Major Outage
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </FormItem>
                 )}
               />
-              
+
               <DialogFooter>
                 <Button type="submit">
                   {currentService ? "Update Service" : "Create Service"}
