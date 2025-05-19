@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Service, ServiceStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import { useUser, useOrganization } from "@clerk/clerk-react";
 import { 
   Table,
   TableBody,
@@ -50,6 +51,8 @@ type ServiceFormValues = {
 };
 
 export default function ServiceManagement({ services }: ServiceManagementProps) {
+  const { user } = useUser();
+  const { organization } = useOrganization();
   const [isOpen, setIsOpen] = useState(false);
   const [currentService, setCurrentService] = useState<Service | null>(null);
   const [localServices, setLocalServices] = useState<Service[]>(services);
@@ -62,7 +65,7 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
     }
   });
   
-  const onSubmit = (data: ServiceFormValues) => {
+  const onSubmit = async (data: ServiceFormValues) => {
     if (!data.name || !data.status || !data.description) {
       toast({
         title: "Validation Error",
@@ -71,40 +74,52 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
       });
       return;
     }
-    
-    if (currentService) {
-      // Update existing service
-      const updatedServices = localServices.map(service => 
-        service.id === currentService.id 
-          ? { 
-              ...service, 
-              name: data.name, 
-              status: data.status,
-              description: data.description,
-              lastChecked: new Date().toISOString()
-            } 
-          : service
-      );
-      setLocalServices(updatedServices);
+
+    if (!user || !organization) {
       toast({
-        title: "Service updated",
-        description: `${data.name} has been updated successfully.`,
+        title: "Error",
+        description: "User or organization not found. Please try again.",
+        variant: "destructive"
       });
-    } else {
-      // Create new service
-      const newService: Service = {
-        id: `service-${Date.now()}`,
-        name: data.name,
-        status: data.status,
-        description: data.description,
-        lastChecked: new Date().toISOString()
-      };
+      return;
+    }
+
+    console.log("Organization:", organization); // Debug log
+    console.log("organization.id:", organization.id);
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/services/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: data.name,
+          description: data.description,
+          status: data.status,
+          user_id: user.id,
+          OrganizationID: organization.id // Clerk organization ID is already a string
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create service');
+      }
+
+      const newService = await response.json();
       setLocalServices([...localServices, newService]);
       toast({
         title: "Service created",
         description: `${data.name} has been added successfully.`,
       });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create service. Please try again.",
+        variant: "destructive"
+      });
     }
+
     setIsOpen(false);
     setCurrentService(null);
     form.reset();

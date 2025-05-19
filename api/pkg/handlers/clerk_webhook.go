@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
-
+	"github.com/google/uuid"
 	"net/http"
 
 	"github.com/apsinghdev/PopenStatus/api/pkg/db"
@@ -79,6 +79,7 @@ func HandleClerkWebhook(c *fiber.Ctx) error {
 	switch event.Type {
 	case "organization.created":
 		org := models.Organization{
+			ID: uuid.NewString(),
 			ClerkOrgID: event.Data.ID,
 			Name:       event.Data.Name,
 			Slug:       event.Data.Slug,

@@ -41,7 +41,7 @@ export function StatusHeader({ services }: StatusHeaderProps) {
   const allOperational = services.every(
     (service) => service.status === "operational"
   );
-  const hasOutage = services.some((service) => service.status === "outage");
+  const hasOutage = services.some((service) => service.status === "major_outage");
 
   let statusIcon = <CheckCircle className="h-5 w-5 text-green-500" />;
   let statusText = "All systems operational";

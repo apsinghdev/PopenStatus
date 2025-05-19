@@ -12,35 +12,35 @@ func main() {
 	// Connect to the database
 	dbConn := db.Connect()
 
-	// // Drop existing tables
-	// dbConn.Migrator().DropTable(
-	// 	&models.Organization{},
-	// 	&models.Service{},
-	// 	&models.Incident{},
-	// 	&models.IncidentUpdate{},
-	// 	&models.Maintenance{},
-	// 	&models.OrganizationMember{},
-	// )
+	// Drop existing tables
+	dbConn.Migrator().DropTable(
+		&models.OrganizationMember{},
+		&models.IncidentUpdate{},
+		&models.Incident{},
+		&models.Maintenance{},
+		&models.Service{},
+		&models.Organization{},
+	)
 
-	// // Auto migrate all models
-	// dbConn.AutoMigrate(
-	// 	&models.Organization{},
-	// 	&models.Service{},
-	// 	&models.Incident{},
-	// 	&models.IncidentUpdate{},
-	// 	&models.Maintenance{},
-	// 	&models.OrganizationMember{},
-	// )
+	// Auto migrate all models
+	dbConn.AutoMigrate(
+		&models.Organization{},
+		&models.Service{},
+		&models.Incident{},
+		&models.IncidentUpdate{},
+		&models.Maintenance{},
+		&models.OrganizationMember{},
+	)
 
 	// Create demo organization
 	org := models.Organization{
-		ClerkOrgID: "org_2fDz8sLk9PZJmRnQ4tGbWALeExi", // Example Clerk org ID
+		ClerkOrgID: "org_2fDz8sLk9PZJmRnQ4tGbWALeExi",
 		Name:       "Tech Corp",
 		Slug:       "tech-corp",
 	}
 	dbConn.Create(&org)
 
-	// Add team members (using fake Clerk user IDs)
+	// Add team members (using org.ID now)
 	members := []models.OrganizationMember{
 		{
 			ClerkUserID:    "user_2fDz8sLk9PZJmRnQ4tGbWALeExi",
@@ -67,7 +67,7 @@ func main() {
 		{
 			Name:           "Database Cluster",
 			Description:    "Primary PostgreSQL database",
-			Status:         "degraded_performance",
+			Status:         "degraded", // fixed invalid enum
 			UserID:         "user_2fDz8sLk9PZJmRnQ4tGbWALeExi",
 			OrganizationID: org.ID,
 		},
@@ -81,7 +81,7 @@ func main() {
 			Description:    "Increased response times across endpoints",
 			Status:         "identified",
 			Severity:       "high",
-			ServiceID:      services[0].ID,
+			ServiceID:      fmt.Sprint(services[0].ID),
 			OrganizationID: org.ID,
 			Updates: []models.IncidentUpdate{
 				{Message: "Initial investigation started"},
@@ -93,7 +93,7 @@ func main() {
 			Description:    "Primary-replica synchronization delay",
 			Status:         "investigating",
 			Severity:       "medium",
-			ServiceID:      services[1].ID,
+			ServiceID:      fmt.Sprint(services[1].ID),
 			OrganizationID: org.ID,
 			Updates: []models.IncidentUpdate{
 				{Message: "Monitoring alerts triggered"},
@@ -104,14 +104,16 @@ func main() {
 			Description:    "Increased response times across endpoints",
 			Status:         "resolved",
 			Severity:       "medium",
-			ServiceID:      services[0].ID,
+			ServiceID:      fmt.Sprint(services[0].ID),
 			OrganizationID: org.ID,
 			Updates: []models.IncidentUpdate{
 				{Message: "Monitoring alerts triggered"},
 			},
 		},
 	}
-	dbConn.Create(&incidents)
+	for _, incident := range incidents {
+		dbConn.Create(&incident)
+	}
 
 	// Create maintenance window
 	maintenance := models.Maintenance{
@@ -120,7 +122,7 @@ func main() {
 		ScheduledStart: time.Now().Add(24 * time.Hour),
 		ScheduledEnd:   time.Now().Add(26 * time.Hour),
 		Status:         "scheduled",
-		ServiceID:      services[1].ID,
+		ServiceID:      fmt.Sprint(services[1].ID),
 		OrganizationID: org.ID,
 	}
 	dbConn.Create(&maintenance)

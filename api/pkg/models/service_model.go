@@ -7,7 +7,7 @@ import (
 )
 
 type Organization struct {
-	ID uint `gorm:"primarykey" json:"id"`
+	ID string `gorm:"primarykey" json:"id"`
 
 	// Clerk organization ID
 	ClerkOrgID string `gorm:"uniqueIndex;not null" json:"clerk_org_id"`
@@ -28,7 +28,7 @@ type Service struct {
 	Description    string
 	Status         string `gorm:"not null;default:'operational'"` // Enum: operational/degraded/partial_outage/major_outage
 	UserID         string `gorm:"not null"`                       // Clerk user ID
-	OrganizationID uint   `gorm:"not null"`
+	OrganizationID string `gorm:"not null"`
 	Organization   Organization
 }
 
@@ -38,9 +38,9 @@ type Incident struct {
 	Description    string
 	Status         string `gorm:"not null"` // Enum: investigating/identified/resolved
 	Severity       string // Optional: critical/high/medium/low
-	ServiceID      uint   // Foreign key to Service
+	ServiceID      string   // Foreign key to Service
 	Service        Service
-	OrganizationID uint `gorm:"not null"`
+	OrganizationID string `gorm:"not null"`
 	Organization   Organization
 	Updates        []IncidentUpdate `gorm:"foreignKey:IncidentID"`
 }
@@ -48,7 +48,7 @@ type Incident struct {
 type IncidentUpdate struct {
 	gorm.Model
 	Message    string `gorm:"not null"` // e.g., "Root cause identified"
-	IncidentID uint   // Foreign key to Incident
+	IncidentID string   // Foreign key to Incident
 	Incident   Incident
 }
 
@@ -59,16 +59,16 @@ type Maintenance struct {
 	ScheduledStart time.Time
 	ScheduledEnd   time.Time
 	Status         string `gorm:"not null"` // Enum: scheduled/in_progress/completed
-	ServiceID      uint   // Foreign key to Service
+	ServiceID      string   // Foreign key to Service
 	Service        Service
-	OrganizationID uint `gorm:"not null"`
+	OrganizationID string `gorm:"not null"`
 	Organization   Organization
 }
 
 type OrganizationMember struct {
 	gorm.Model
 	ClerkUserID    string `gorm:"not null"` // Clerk's external user ID (no local user table needed)
-	OrganizationID uint   `gorm:"not null"`
+	OrganizationID string `gorm:"not null"`
 	Organization   Organization
 	Role           string `gorm:"not null"` // Enum: admin/member
 }

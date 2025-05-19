@@ -12,7 +12,7 @@ func ServiceRoutes(app *fiber.App) {
 	incidentsGroup := api.Group("/incidents")
 	orgGroup := api.Group("/organizations")
 
-	servicesGroup.Post("/create", services.CreateService)
+	servicesGroup.Post("/create", services.HandleCreateService)
 	servicesGroup.Get("/list", services.ListServices)
 
 	incidentsGroup.Post("/create", services.CreateIncident)
