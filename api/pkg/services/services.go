@@ -25,15 +25,23 @@ func ListServices(c *fiber.Ctx) error {
 	db := db.Connect()
 
 	// Get organization ID from query parameters
-	organizationID := c.Query("organization_id")
-	if organizationID == "" {
+	clerkOrgID := c.Query("organization_id")
+	if clerkOrgID == "" {
 		return c.Status(400).JSON(fiber.Map{
 			"error": "Organization ID is required",
 		})
 	}
 
-	// Find services for the specific organization
-	result := db.Where("organization_id = ?", organizationID).Find(&services)
+	// First find the organization by its clerk_org_id
+	var org models.Organization
+	if err := db.Where("clerk_org_id = ?", clerkOrgID).First(&org).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Organization not found",
+		})
+	}
+
+	// Find services for the specific organization using its internal ID
+	result := db.Where("organization_id = ?", org.ID).Find(&services)
 	if result.Error != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"error": "Failed to fetch services",
@@ -118,4 +126,72 @@ func GetOrganizationStatus(c *fiber.Ctx) error {
 	}
 
 	return c.Status(200).JSON(response)
+}
+
+// DeleteService deletes a service and all its related data
+func DeleteService(c *fiber.Ctx) error {
+	serviceID := c.Params("id")
+	organizationID := c.Query("organization_id")
+
+	if serviceID == "" || organizationID == "" {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Service ID and Organization ID are required",
+		})
+	}
+
+	db := db.Connect()
+
+	// First verify the service belongs to the organization
+	var service models.Service
+	if err := db.Where("id = ? AND organization_id = ?", serviceID, organizationID).First(&service).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Service not found or does not belong to the organization",
+		})
+	}
+
+	// Start a transaction to ensure all deletions are atomic
+	tx := db.Begin()
+
+	// Delete all incident updates for incidents related to this service
+	if err := tx.Where("incident_id IN (SELECT id FROM incidents WHERE service_id = ?)", serviceID).Delete(&models.IncidentUpdate{}).Error; err != nil {
+		tx.Rollback()
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to delete incident updates",
+		})
+	}
+
+	// Delete all incidents related to this service
+	if err := tx.Where("service_id = ?", serviceID).Delete(&models.Incident{}).Error; err != nil {
+		tx.Rollback()
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to delete incidents",
+		})
+	}
+
+	// Delete all maintenance records related to this service
+	if err := tx.Where("service_id = ?", serviceID).Delete(&models.Maintenance{}).Error; err != nil {
+		tx.Rollback()
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to delete maintenance records",
+		})
+	}
+
+	// Finally delete the service
+	if err := tx.Delete(&service).Error; err != nil {
+		tx.Rollback()
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to delete service",
+		})
+	}
+
+	// Commit the transaction
+	if err := tx.Commit().Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to commit transaction",
+		})
+	}
+
+	return c.Status(200).JSON(fiber.Map{
+		"message": "Service and all related data deleted successfully",
+	})
 }
