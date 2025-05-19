@@ -62,7 +62,8 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
       name: "",
       status: "operational",
       description: ""
-    }
+    },
+    mode: "onChange"
   });
   
   const onSubmit = async (data: ServiceFormValues) => {
@@ -84,9 +85,6 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
       return;
     }
 
-    console.log("Organization:", organization); // Debug log
-    console.log("organization.id:", organization.id);
-    
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/services/create`, {
         method: 'POST',
@@ -98,7 +96,7 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
           description: data.description,
           status: data.status,
           user_id: user.id,
-          OrganizationID: organization.id // Clerk organization ID is already a string
+          OrganizationID: organization.id
         }),
       });
 
@@ -107,22 +105,41 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
       }
 
       const newService = await response.json();
-      setLocalServices([...localServices, newService]);
+      console.log('New service created:', newService); // Debug log
+
+      // Ensure the new service has all required fields
+      const serviceToAdd = {
+        ...newService,
+        name: data.name, // Explicitly set the name from form data
+        lastChecked: newService.lastChecked || new Date().toISOString(),
+        status: newService.status || data.status
+      };
+
+      console.log('Service to add:', serviceToAdd); // Debug log for the service being added
+
+      // Update the local state with the new service
+      setLocalServices(prevServices => {
+        const updatedServices = [...prevServices, serviceToAdd];
+        return updatedServices;
+      });
+      
       toast({
         title: "Service created",
         description: `${data.name} has been added successfully.`,
       });
+
+      // Close the dialog and reset form
+      setIsOpen(false);
+      setCurrentService(null);
+      form.reset();
     } catch (error) {
+      console.error('Error creating service:', error);
       toast({
         title: "Error",
         description: "Failed to create service. Please try again.",
         variant: "destructive"
       });
     }
-
-    setIsOpen(false);
-    setCurrentService(null);
-    form.reset();
   };
   
   const editService = (service: Service) => {
@@ -197,7 +214,7 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
       <div className="rounded-md border">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow key="header-row">
               <TableHead>Name</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Last Updated</TableHead>
@@ -216,7 +233,7 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
                 <TableRow key={service.id}>
                   <TableCell className="font-medium">{service.name}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" key={`status-${service.id}`}>
                       {getStatusIcon(service.status)}
                       <span>{getStatusText(service.status)}</span>
                     </div>
@@ -225,11 +242,12 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
                     {new Date(service.lastChecked).toLocaleString()}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" key={`actions-${service.id}`}>
                       <Button 
                         variant="ghost" 
                         size="icon" 
                         onClick={() => editService(service)}
+                        key={`edit-${service.id}`}
                       >
                         <Pencil className="h-4 w-4" />
                         <span className="sr-only">Edit</span>
@@ -238,6 +256,7 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
                         variant="ghost" 
                         size="icon"
                         onClick={() => deleteService(service.id)}
+                        key={`delete-${service.id}`}
                       >
                         <Trash2 className="h-4 w-4" />
                         <span className="sr-only">Delete</span>
@@ -275,7 +294,8 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
                     <FormControl>
                       <Input 
                         placeholder="e.g. Website, API, Database" 
-                        {...field} 
+                        {...field}
+                        value={field.value || ""}
                         required
                       />
                     </FormControl>
@@ -294,6 +314,7 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
                         placeholder="Describe the service and its purpose..."
                         className="min-h-[100px]"
                         {...field}
+                        value={field.value || ""}
                         required
                       />
                     </FormControl>
@@ -309,7 +330,7 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
                     <FormLabel>Status *</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
-                      defaultValue={field.value}
+                      value={field.value || "operational"}
                       required
                     >
                       <FormControl>
