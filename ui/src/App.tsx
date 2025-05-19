@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import CreateOrganizationPage from "./pages/CreateOrganizationPage";
 import OrganizationStatus from "./pages/OrganizationStatus";
 import OrganizationProfilePage from "./pages/OrganizationProfilePage";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
             />
             <Route path="/org/:slug" element={<OrganizationStatus />} />
             <Route path="/org/:slug/settings" element={<OrganizationProfilePage />} />
+            <Route path="/org/:slug/admin-dashboard" element={<AdminDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

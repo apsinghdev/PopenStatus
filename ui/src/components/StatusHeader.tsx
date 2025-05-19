@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, AlertTriangle, AlertCircle, LogIn } from "lucide-react";
+import { CheckCircle, AlertTriangle, AlertCircle, LogIn, LayoutDashboard } from "lucide-react";
 import {
   SignedIn,
   SignedOut,
@@ -9,6 +9,7 @@ import {
   OrganizationSwitcher,
   useOrganization,
 } from "@clerk/clerk-react";
+import { useNavigate } from "react-router-dom";
 import { Service } from "@/lib/types";
 
 interface StatusHeaderProps {
@@ -17,7 +18,14 @@ interface StatusHeaderProps {
 
 export function StatusHeader({ services }: StatusHeaderProps) {
   const { organization } = useOrganization();
+  const navigate = useNavigate();
   const afterSignOutUrl = organization ? `/org/${organization.slug}` : "/";
+
+  const handleDashboardClick = () => {
+    if (organization) {
+      navigate(`/org/${organization.slug}/admin-dashboard`);
+    }
+  };
 
   const allOperational = services.every(
     (service) => service.status === "operational"
@@ -56,6 +64,15 @@ export function StatusHeader({ services }: StatusHeaderProps) {
             afterCreateOrganizationUrl="/org/:slug"
             afterSelectOrganizationUrl="/org/:slug"
           />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDashboardClick}
+            className="flex items-center gap-2"
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            Dashboard
+          </Button>
           <UserButton afterSignOutUrl={afterSignOutUrl} />
         </SignedIn>
       </div>
