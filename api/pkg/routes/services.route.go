@@ -15,6 +15,7 @@ func ServiceRoutes(app *fiber.App) {
 	servicesGroup.Post("/create", services.HandleCreateService)
 	servicesGroup.Get("/list", services.ListServices)
 	servicesGroup.Delete("/:id", services.DeleteService)
+	servicesGroup.Put("/:id", services.UpdateService)
 
 	incidentsGroup.Post("/create", services.CreateIncident)
 	incidentsGroup.Get("/list", services.ListIncidents)

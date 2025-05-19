@@ -40,8 +40,8 @@ func ListServices(c *fiber.Ctx) error {
 		})
 	}
 
-	// Find services for the specific organization using its internal ID
-	result := db.Where("organization_id = ?", org.ID).Find(&services)
+	// Find services for the specific organization using its internal ID and preload the Organization
+	result := db.Preload("Organization").Where("organization_id = ?", org.ID).Find(&services)
 	if result.Error != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"error": "Failed to fetch services",
@@ -202,4 +202,66 @@ func DeleteService(c *fiber.Ctx) error {
 	return c.Status(200).JSON(fiber.Map{
 		"message": "Service and all related data deleted successfully",
 	})
+}
+
+// UpdateService updates a service's information
+func UpdateService(c *fiber.Ctx) error {
+	serviceID := c.Params("id")
+	clerkOrgID := c.Query("organization_id")
+
+	if serviceID == "" || clerkOrgID == "" {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Service ID and Organization ID are required",
+		})
+	}
+
+	// Parse the update data
+	var updateData struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		Status      string `json:"status"`
+	}
+	if err := c.BodyParser(&updateData); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	db := db.Connect()
+
+	// First find the organization by its clerk_org_id
+	var org models.Organization
+	if err := db.Where("clerk_org_id = ?", clerkOrgID).First(&org).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Organization not found",
+		})
+	}
+
+	// Then verify the service belongs to the organization using internal org ID
+	var service models.Service
+	if err := db.Where("id = ? AND organization_id = ?", serviceID, org.ID).First(&service).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Service not found or does not belong to the organization",
+		})
+	}
+
+	// Update the service fields if they are provided
+	if updateData.Name != "" {
+		service.Name = updateData.Name
+	}
+	if updateData.Description != "" {
+		service.Description = updateData.Description
+	}
+	if updateData.Status != "" {
+		service.Status = updateData.Status
+	}
+
+	// Save the updated service
+	if err := db.Save(&service).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to update service",
+		})
+	}
+
+	return c.Status(200).JSON(service)
 }
