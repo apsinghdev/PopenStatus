@@ -1,4 +1,4 @@
-export type ServiceStatus = "operational" | "degraded" | "outage";
+export type ServiceStatus = "operational" | "degraded" | "partial_outage" | "major_outage";
 
 export interface Service {
   id: string;

@@ -63,6 +63,15 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
   });
   
   const onSubmit = (data: ServiceFormValues) => {
+    if (!data.name || !data.status || !data.description) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (currentService) {
       // Update existing service
       const updatedServices = localServices.map(service => 
@@ -136,7 +145,9 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
         return <CheckCircle className="h-5 w-5 text-green-500" />;
       case "degraded":
         return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
-      case "outage":
+      case "partial_outage":
+        return <AlertCircle className="h-5 w-5 text-orange-500" />;
+      case "major_outage":
         return <AlertCircle className="h-5 w-5 text-red-500" />;
       default:
         return null;
@@ -149,8 +160,10 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
         return "Operational";
       case "degraded":
         return "Degraded Performance";
-      case "outage":
-        return "Outage";
+      case "partial_outage":
+        return "Partial Outage";
+      case "major_outage":
+        return "Major Outage";
       default:
         return status;
     }
@@ -243,11 +256,12 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Service Name</FormLabel>
+                    <FormLabel>Service Name *</FormLabel>
                     <FormControl>
                       <Input 
                         placeholder="e.g. Website, API, Database" 
                         {...field} 
+                        required
                       />
                     </FormControl>
                   </FormItem>
@@ -259,12 +273,13 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>Description *</FormLabel>
                     <FormControl>
                       <Textarea 
                         placeholder="Describe the service and its purpose..."
                         className="min-h-[100px]"
-                        {...field} 
+                        {...field}
+                        required
                       />
                     </FormControl>
                   </FormItem>
@@ -276,10 +291,11 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status</FormLabel>
+                    <FormLabel>Status *</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
                       defaultValue={field.value}
+                      required
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -289,7 +305,8 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
                       <SelectContent>
                         <SelectItem value="operational">Operational</SelectItem>
                         <SelectItem value="degraded">Degraded Performance</SelectItem>
-                        <SelectItem value="outage">Outage</SelectItem>
+                        <SelectItem value="partial_outage">Partial Outage</SelectItem>
+                        <SelectItem value="major_outage">Major Outage</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormItem>
