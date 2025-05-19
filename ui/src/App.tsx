@@ -16,7 +16,6 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ClerkProvider 
-      signInForceRedirectUrl="/create-organization" 
       publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
     >
       <BrowserRouter>

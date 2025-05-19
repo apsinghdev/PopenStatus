@@ -4,13 +4,14 @@ import { CheckCircle, AlertTriangle, AlertCircle, LogIn, LayoutDashboard } from 
 import {
   SignedIn,
   SignedOut,
-  SignInButton,
+  SignIn,
   UserButton,
   OrganizationSwitcher,
   useOrganization,
 } from "@clerk/clerk-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Service } from "@/lib/types";
+import { useState } from "react";
 
 interface StatusHeaderProps {
   services: Service[];
@@ -19,11 +20,21 @@ interface StatusHeaderProps {
 export function StatusHeader({ services }: StatusHeaderProps) {
   const { organization } = useOrganization();
   const navigate = useNavigate();
+  const { slug } = useParams();
+  const [showSignIn, setShowSignIn] = useState(false);
   const afterSignOutUrl = organization ? `/org/${organization.slug}` : "/";
 
   const handleDashboardClick = () => {
     if (organization) {
       navigate(`/org/${organization.slug}/admin-dashboard`);
+    }
+  };
+
+  const handleSignInClick = () => {
+    if (slug) {
+      setShowSignIn(true);
+    } else {
+      navigate('/create-organization');
     }
   };
 
@@ -51,7 +62,27 @@ export function StatusHeader({ services }: StatusHeaderProps) {
       {/* Login button and organization switcher in the top right */}
       <div className="absolute top-0 right-0 flex items-center gap-2">
         <SignedOut>
-          <SignInButton />
+          {showSignIn && slug ? (
+            <SignIn
+              forceRedirectUrl={`/org/${slug}`}
+              appearance={{
+                elements: {
+                  rootBox: "flex justify-center items-center",
+                  card: "shadow-none",
+                },
+              }}
+            />
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSignInClick}
+              className="flex items-center gap-2"
+            >
+              <LogIn className="h-4 w-4" />
+              Sign In
+            </Button>
+          )}
         </SignedOut>
         <SignedIn>
           <OrganizationSwitcher 
