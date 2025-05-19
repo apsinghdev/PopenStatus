@@ -23,7 +23,17 @@ func CreateService(c *fiber.Ctx) error {
 func ListServices(c *fiber.Ctx) error {
 	var services []models.Service
 	db := db.Connect()
-	result := db.Find(&services)
+
+	// Get organization ID from query parameters
+	organizationID := c.Query("organization_id")
+	if organizationID == "" {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Organization ID is required",
+		})
+	}
+
+	// Find services for the specific organization
+	result := db.Where("organization_id = ?", organizationID).Find(&services)
 	if result.Error != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"error": "Failed to fetch services",

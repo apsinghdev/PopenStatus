@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Service, ServiceStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { useUser, useOrganization } from "@clerk/clerk-react";
@@ -50,12 +50,12 @@ type ServiceFormValues = {
   description: string;
 };
 
-export default function ServiceManagement({ services }: ServiceManagementProps) {
+export default function ServiceManagement({ services: initialServices }: ServiceManagementProps) {
   const { user } = useUser();
   const { organization } = useOrganization();
   const [isOpen, setIsOpen] = useState(false);
   const [currentService, setCurrentService] = useState<Service | null>(null);
-  const [localServices, setLocalServices] = useState<Service[]>(services);
+  const [localServices, setLocalServices] = useState<Service[]>(initialServices);
   
   const form = useForm<ServiceFormValues>({
     defaultValues: {
@@ -65,6 +65,71 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
     },
     mode: "onChange"
   });
+  
+  useEffect(() => {
+    const fetchServices = async () => {
+      if (!organization) {
+        console.log('No organization found');
+        return;
+      }
+
+      console.log('Current organization:', organization);
+      const orgId = organization.id;
+      
+      if (!orgId) {
+        console.error('Organization ID is missing');
+        toast({
+          title: "Error",
+          description: "Organization ID is missing. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      try {
+        console.log('Fetching services for organization:', orgId);
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/services/list?organization_id=${orgId}`
+        );
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          console.error('API Error Response:', {
+            status: response.status,
+            statusText: response.statusText,
+            errorData
+          });
+          throw new Error(`Failed to fetch services: ${response.status} ${response.statusText}`);
+        }
+
+        const services = await response.json();
+        console.log('Fetched services:', services);
+        if (Array.isArray(services)) {
+          // Transform the services data to match our interface
+          const transformedServices = services.map(service => ({
+            id: service.ID?.toString() || service.id?.toString(),
+            name: service.Name || service.name,
+            status: (service.Status || service.status || 'operational') as ServiceStatus,
+            lastChecked: service.UpdatedAt || service.lastChecked || new Date().toISOString(),
+            description: service.Description || service.description
+          }));
+          console.log('Transformed services:', transformedServices);
+          setLocalServices(transformedServices);
+        } else {
+          console.error('Received non-array services data:', services);
+        }
+      } catch (error) {
+        console.error('Error fetching services:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch services. Please try again.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    fetchServices();
+  }, [organization]);
   
   const onSubmit = async (data: ServiceFormValues) => {
     if (!data.name || !data.status || !data.description) {
@@ -85,7 +150,18 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
       return;
     }
 
+    const orgId = organization.id;
+    if (!orgId) {
+      toast({
+        title: "Error",
+        description: "Organization ID is missing. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
+      console.log('Creating service with organization ID:', orgId);
       const response = await fetch(`${import.meta.env.VITE_API_URL}/services/create`, {
         method: 'POST',
         headers: {
@@ -96,7 +172,7 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
           description: data.description,
           status: data.status,
           user_id: user.id,
-          OrganizationID: organization.id
+          OrganizationID: orgId
         }),
       });
 
@@ -105,21 +181,23 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
       }
 
       const newService = await response.json();
-      console.log('New service created:', newService); // Debug log
+      console.log('New service created:', newService);
 
       // Ensure the new service has all required fields
       const serviceToAdd = {
         ...newService,
-        name: data.name, // Explicitly set the name from form data
+        name: data.name,
+        organization_id: orgId,
         lastChecked: newService.lastChecked || new Date().toISOString(),
         status: newService.status || data.status
       };
 
-      console.log('Service to add:', serviceToAdd); // Debug log for the service being added
+      console.log('Service to add:', serviceToAdd);
 
       // Update the local state with the new service
       setLocalServices(prevServices => {
         const updatedServices = [...prevServices, serviceToAdd];
+        console.log('Updated services:', updatedServices);
         return updatedServices;
       });
       
@@ -214,7 +292,7 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
       <div className="rounded-md border">
         <Table>
           <TableHeader>
-            <TableRow key="header-row">
+            <TableRow key="header">
               <TableHead>Name</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Last Updated</TableHead>
@@ -222,32 +300,33 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {localServices.length === 0 ? (
-              <TableRow>
+            {!localServices || localServices.length === 0 ? (
+              <TableRow key="no-services">
                 <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
                   No services found. Create a service to get started.
                 </TableCell>
               </TableRow>
             ) : (
-              localServices.map((service) => (
-                <TableRow key={service.id}>
-                  <TableCell className="font-medium">{service.name}</TableCell>
+              localServices.map((service, index) => (
+                <TableRow key={`${service.name || 'unnamed'}-${service.status || 'unknown'}-${service.lastChecked || Date.now()}-${index}`}>
+                  <TableCell className="font-medium">
+                    {service.name || 'Unnamed Service'}
+                  </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2" key={`status-${service.id}`}>
+                    <div className="flex items-center gap-2">
                       {getStatusIcon(service.status)}
                       <span>{getStatusText(service.status)}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    {new Date(service.lastChecked).toLocaleString()}
+                    {service.lastChecked ? new Date(service.lastChecked).toLocaleString() : 'Never'}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2" key={`actions-${service.id}`}>
+                    <div className="flex items-center gap-2">
                       <Button 
                         variant="ghost" 
                         size="icon" 
                         onClick={() => editService(service)}
-                        key={`edit-${service.id}`}
                       >
                         <Pencil className="h-4 w-4" />
                         <span className="sr-only">Edit</span>
@@ -256,7 +335,6 @@ export default function ServiceManagement({ services }: ServiceManagementProps) 
                         variant="ghost" 
                         size="icon"
                         onClick={() => deleteService(service.id)}
-                        key={`delete-${service.id}`}
                       >
                         <Trash2 className="h-4 w-4" />
                         <span className="sr-only">Delete</span>
