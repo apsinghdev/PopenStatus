@@ -131,9 +131,9 @@ func GetOrganizationStatus(c *fiber.Ctx) error {
 // DeleteService deletes a service and all its related data
 func DeleteService(c *fiber.Ctx) error {
 	serviceID := c.Params("id")
-	organizationID := c.Query("organization_id")
+	clerkOrgID := c.Query("organization_id")
 
-	if serviceID == "" || organizationID == "" {
+	if serviceID == "" || clerkOrgID == "" {
 		return c.Status(400).JSON(fiber.Map{
 			"error": "Service ID and Organization ID are required",
 		})
@@ -141,9 +141,17 @@ func DeleteService(c *fiber.Ctx) error {
 
 	db := db.Connect()
 
-	// First verify the service belongs to the organization
+	// First find the organization by its clerk_org_id
+	var org models.Organization
+	if err := db.Where("clerk_org_id = ?", clerkOrgID).First(&org).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Organization not found",
+		})
+	}
+
+	// Then verify the service belongs to the organization using internal org ID
 	var service models.Service
-	if err := db.Where("id = ? AND organization_id = ?", serviceID, organizationID).First(&service).Error; err != nil {
+	if err := db.Where("id = ? AND organization_id = ?", serviceID, org.ID).First(&service).Error; err != nil {
 		return c.Status(404).JSON(fiber.Map{
 			"error": "Service not found or does not belong to the organization",
 		})

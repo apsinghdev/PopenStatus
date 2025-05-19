@@ -230,13 +230,51 @@ export default function ServiceManagement({ services: initialServices }: Service
     setIsOpen(true);
   };
   
-  const deleteService = (id: string) => {
-    setLocalServices(localServices.filter(service => service.id !== id));
-    toast({
-      title: "Service deleted",
-      description: "The service has been removed successfully.",
-      variant: "destructive"
-    });
+  const deleteService = async (id: string) => {
+    if (!organization) {
+      toast({
+        title: "Error",
+        description: "Organization not found. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/services/${id}?organization_id=${organization.id}`,
+        {
+          method: 'DELETE',
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        if (response.status === 404) {
+          // If service not found, remove it from local state anyway
+          setLocalServices(localServices.filter(service => service.id !== id));
+          toast({
+            title: "Service deleted",
+            description: "The service has been removed from the list.",
+          });
+          return;
+        }
+        throw new Error(errorData?.error || 'Failed to delete service');
+      }
+
+      setLocalServices(localServices.filter(service => service.id !== id));
+      toast({
+        title: "Service deleted",
+        description: "The service has been removed successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting service:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete service. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
   
   const openCreateDialog = () => {
