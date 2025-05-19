@@ -6,6 +6,8 @@ import {
   SignedOut,
   SignInButton,
   UserButton,
+  OrganizationSwitcher,
+  useOrganization,
 } from "@clerk/clerk-react";
 import { Service } from "@/lib/types";
 
@@ -14,6 +16,9 @@ interface StatusHeaderProps {
 }
 
 export function StatusHeader({ services }: StatusHeaderProps) {
+  const { organization } = useOrganization();
+  const afterSignOutUrl = organization ? `/org/${organization.slug}` : "/";
+
   const allOperational = services.every(
     (service) => service.status === "operational"
   );
@@ -35,13 +40,23 @@ export function StatusHeader({ services }: StatusHeaderProps) {
 
   return (
     <div className="relative flex flex-col items-center justify-center py-8 md:py-12 text-center">
-      {/* Login button in the top right */}
-      <div className="absolute top-0 right-0">
+      {/* Login button and organization switcher in the top right */}
+      <div className="absolute top-0 right-0 flex items-center gap-2">
         <SignedOut>
           <SignInButton />
         </SignedOut>
         <SignedIn>
-          <UserButton />
+          <OrganizationSwitcher 
+            appearance={{
+              elements: {
+                rootBox: "flex justify-center items-center",
+                organizationSwitcherTrigger: "py-2 px-4",
+              },
+            }}
+            afterCreateOrganizationUrl="/org/:slug"
+            afterSelectOrganizationUrl="/org/:slug"
+          />
+          <UserButton afterSignOutUrl={afterSignOutUrl} />
         </SignedIn>
       </div>
 

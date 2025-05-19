@@ -3,7 +3,7 @@ import { CreateOrganization } from "@clerk/clerk-react";
 const CreateOrganizationPage = () => {
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <CreateOrganization />
+      <CreateOrganization afterCreateOrganizationUrl="/org/:slug" />
     </div>
   );
 };
