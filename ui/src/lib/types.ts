@@ -22,6 +22,8 @@ export interface Incident {
   status: IncidentStatus;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
+  updates: IncidentUpdate[];
+  affectedServices: string[];
 }
 
 export interface TimelineEvent {
