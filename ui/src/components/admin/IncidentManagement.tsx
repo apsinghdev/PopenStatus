@@ -52,7 +52,8 @@ type IncidentFormValues = {
   description: string;
   status: IncidentStatus;
   organization_id: string;
-  affectedServices: string[];
+  affectedServices?: string[];
+  serviceName?: string;
 };
 
 export default function IncidentManagement({
@@ -87,6 +88,7 @@ export default function IncidentManagement({
         description: data.description,
         status: data.status,
         organization_id: organizationId,
+        serviceName: data.serviceName,
         affectedServices: data.affectedServices,
       });
 
@@ -108,7 +110,8 @@ export default function IncidentManagement({
                 ...incident,
                 title: data.title,
                 status: data.status,
-                affectedServices: data.affectedServices,
+                affectedServices: data.affectedServices || [],
+                serviceName: data.serviceName || "",
                 updatedAt: new Date().toISOString(),
               }
             : incident
@@ -126,6 +129,7 @@ export default function IncidentManagement({
           status: data.status.toLowerCase(),
           organization_id: organizationId,
           service_id: data.affectedServices[0] || "",
+          service_name: data.serviceName || "",
           affected_services: data.affectedServices,
         };
 
@@ -147,6 +151,9 @@ export default function IncidentManagement({
         const newIncident = await response.json();
         console.log('Raw API Response:', newIncident);
 
+        // Find the selected service to get its name
+        const selectedService = services.find(service => service.id === data.affectedServices[0]);
+
         // Format the incident to match our type definition
         const formattedIncident: Incident = {
           id: newIncident.id,
@@ -155,11 +162,8 @@ export default function IncidentManagement({
           createdAt: newIncident.created_at || new Date().toISOString(),
           updatedAt: newIncident.updated_at || new Date().toISOString(),
           updates: newIncident.updates || [],
-          affectedServices: Array.isArray(newIncident.affected_services) 
-            ? newIncident.affected_services 
-            : newIncident.service_id
-              ? [newIncident.service_id] 
-              : []
+          serviceName: selectedService?.name || '',
+          affectedServices: data.affectedServices || []
         };
         console.log('Formatted Incident:', formattedIncident);
         console.log('Title:', formattedIncident.title);
@@ -195,6 +199,7 @@ export default function IncidentManagement({
       status: incident.status,
       organization_id: organizationId,
       affectedServices: incident.affectedServices || [],
+      serviceName: incident.serviceName || "",
     });
     setIsOpen(true);
   };
@@ -216,6 +221,7 @@ export default function IncidentManagement({
       status: "investigating" as IncidentStatus,
       organization_id: organizationId,
       affectedServices: [],
+      serviceName: "",
     });
     setIsOpen(true);
   };
@@ -271,7 +277,7 @@ export default function IncidentManagement({
           </TableHeader>
           <TableBody>
             {localIncidents.length === 0 ? (
-              <TableRow>
+              <TableRow key="empty-state">
                 <TableCell
                   colSpan={5}
                   className="text-center py-6 text-muted-foreground"
