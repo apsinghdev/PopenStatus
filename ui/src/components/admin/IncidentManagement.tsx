@@ -54,6 +54,7 @@ type IncidentFormValues = {
   organization_id: string;
   affectedServices?: string[];
   serviceName?: string;
+  serviceId?: string;
 };
 
 export default function IncidentManagement({
@@ -90,10 +91,11 @@ export default function IncidentManagement({
         organization_id: organizationId,
         serviceName: data.serviceName,
         affectedServices: data.affectedServices,
+        serviceId: data.serviceId,
       });
 
       // Validate required fields
-      if (!data.title.trim() || !data.status || !data.organization_id || !data.affectedServices?.length) {
+      if (!data.title.trim() || !data.status || !data.organization_id) {
         toast({
           title: "Validation Error",
           description: "Please fill in all required fields including at least one affected service.",
@@ -104,19 +106,52 @@ export default function IncidentManagement({
 
       if (currentIncident) {
         // Update existing incident
-        const updatedIncidents = localIncidents.map((incident) =>
-          incident.id === currentIncident.id
-            ? {
-                ...incident,
-                title: data.title,
-                status: data.status,
-                affectedServices: data.affectedServices || [],
-                serviceName: data.serviceName || "",
-                updatedAt: new Date().toISOString(),
-              }
-            : incident
+        const requestData = {
+          title: data.title,
+          description: data.description,
+          status: data.status.toLowerCase(),
+        };
+
+        console.log('Update Request Data:', requestData);
+        console.log("currentIncident", currentIncident);
+        
+        // Find the service ID from the services array based on the service name
+        console.log("data", data);
+        const selectedService = services.find(service => service.name === data.serviceName);
+        const serviceId = selectedService?.id || currentIncident.affectedServices?.[0];
+        console.log("serviceId", serviceId);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/incidents/update/${currentIncident.id}?organization_id=${organizationId}&service_id=${serviceId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.message || 'Failed to update incident');
+        }
+
+        const updatedIncident = await response.json();
+        console.log('Update API Response:', updatedIncident);
+
+        // Update local state with the response from the server
+        setLocalIncidents(prevIncidents => 
+          prevIncidents.map(incident => 
+            incident.id === currentIncident.id 
+              ? {
+                  ...incident,
+                  title: updatedIncident.Title || updatedIncident.name || data.title,
+                  status: (updatedIncident.status || data.status) as IncidentStatus,
+                  affectedServices: data.affectedServices || [],
+                  serviceName: data.serviceName || "",
+                  updatedAt: new Date().toISOString(),
+                }
+              : incident
+          )
         );
-        setLocalIncidents(updatedIncidents);
+
         toast({
           title: "Incident updated",
           description: `${data.title} has been updated successfully.`,
@@ -418,46 +453,48 @@ export default function IncidentManagement({
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="affectedServices"
-                render={() => (
-                  <FormItem>
-                    <FormLabel>Affected Service <span className="text-red-500">*</span></FormLabel>
-                    <div className="border rounded-md p-2 space-y-1 max-h-[150px] overflow-y-auto">
-                      {services.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                          No services available
-                        </p>
-                      ) : (
-                        services.map((service) => (
-                          <div key={service.id} className="flex items-center space-x-2">
-                            <input
-                              type="radio"
-                              id={`service-${service.id}`}
-                              name="affectedService"
-                              checked={(form.getValues("affectedServices") || [])[0] === service.id}
-                              onChange={() => {
-                                form.setValue("affectedServices", [service.id], {
-                                  shouldValidate: true,
-                                  shouldDirty: true,
-                                });
-                              }}
-                              className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
-                            />
-                            <label
-                              htmlFor={`service-${service.id}`}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                            >
-                              {service.name}
-                            </label>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </FormItem>
-                )}
-              />
+              {!currentIncident && (
+                <FormField
+                  control={form.control}
+                  name="affectedServices"
+                  render={() => (
+                    <FormItem>
+                      <FormLabel>Affected Service <span className="text-red-500">*</span></FormLabel>
+                      <div className="border rounded-md p-2 space-y-1 max-h-[150px] overflow-y-auto">
+                        {services.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            No services available
+                          </p>
+                        ) : (
+                          services.map((service) => (
+                            <div key={service.id} className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                id={`service-${service.id}`}
+                                name="affectedService"
+                                checked={(form.getValues("affectedServices") || [])[0] === service.id}
+                                onChange={() => {
+                                  form.setValue("affectedServices", [service.id], {
+                                    shouldValidate: true,
+                                    shouldDirty: true,
+                                  });
+                                }}
+                                className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
+                              />
+                              <label
+                                htmlFor={`service-${service.id}`}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              >
+                                {service.name}
+                              </label>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <DialogFooter className="pt-2">
                 <Button type="submit">
