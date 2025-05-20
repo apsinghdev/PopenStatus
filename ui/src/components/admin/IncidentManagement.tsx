@@ -1,5 +1,6 @@
+
 import { useState } from "react";
-import { Incident, IncidentStatus, IncidentUpdate, Service } from "@/lib/types";
+import { Incident, IncidentStatus, Service } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -18,7 +19,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -52,7 +52,6 @@ type IncidentFormValues = {
   title: string;
   status: IncidentStatus;
   affectedServices: string[];
-  message: string;
 };
 
 export default function IncidentManagement({
@@ -62,22 +61,12 @@ export default function IncidentManagement({
   const [isOpen, setIsOpen] = useState(false);
   const [currentIncident, setCurrentIncident] = useState<Incident | null>(null);
   const [localIncidents, setLocalIncidents] = useState<Incident[]>(incidents);
-  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
-  const [currentIncidentForUpdate, setCurrentIncidentForUpdate] = useState<Incident | null>(null);
 
   const form = useForm<IncidentFormValues>({
     defaultValues: {
       title: "",
       status: "investigating",
       affectedServices: [],
-      message: "",
-    },
-  });
-
-  const updateForm = useForm<{ message: string; status: IncidentStatus }>({
-    defaultValues: {
-      message: "",
-      status: "investigating",
     },
   });
 
@@ -109,14 +98,7 @@ export default function IncidentManagement({
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         affectedServices: data.affectedServices,
-        updates: [
-          {
-            id: `update-${Date.now()}`,
-            timestamp: new Date().toISOString(),
-            message: data.message,
-            status: data.status,
-          },
-        ],
+        updates: [],
       };
       setLocalIncidents([...localIncidents, newIncident]);
       toast({
@@ -129,56 +111,14 @@ export default function IncidentManagement({
     form.reset();
   };
 
-  const onAddUpdate = (data: { message: string; status: IncidentStatus }) => {
-    if (!currentIncidentForUpdate) return;
-    
-    const newUpdate: IncidentUpdate = {
-      id: `update-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      message: data.message,
-      status: data.status,
-    };
-
-    const updatedIncidents = localIncidents.map((incident) =>
-      incident.id === currentIncidentForUpdate.id
-        ? {
-            ...incident,
-            updates: [newUpdate, ...incident.updates],
-            status: data.status,
-            updatedAt: new Date().toISOString(),
-          }
-        : incident
-    );
-
-    setLocalIncidents(updatedIncidents);
-    toast({
-      title: "Update added",
-      description: `The incident has been updated successfully.`,
-    });
-    
-    setIsUpdateOpen(false);
-    setCurrentIncidentForUpdate(null);
-    updateForm.reset();
-  };
-
   const editIncident = (incident: Incident) => {
     setCurrentIncident(incident);
     form.reset({
       title: incident.title,
       status: incident.status,
       affectedServices: incident.affectedServices,
-      message: "",
     });
     setIsOpen(true);
-  };
-
-  const addUpdate = (incident: Incident) => {
-    setCurrentIncidentForUpdate(incident);
-    updateForm.reset({
-      message: "",
-      status: incident.status,
-    });
-    setIsUpdateOpen(true);
   };
 
   const deleteIncident = (id: string) => {
@@ -196,7 +136,6 @@ export default function IncidentManagement({
       title: "",
       status: "investigating",
       affectedServices: [],
-      message: "",
     });
     setIsOpen(true);
   };
@@ -247,7 +186,7 @@ export default function IncidentManagement({
               <TableHead>Status</TableHead>
               <TableHead>Created</TableHead>
               <TableHead>Last Updated</TableHead>
-              <TableHead className="w-[160px]">Actions</TableHead>
+              <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -289,22 +228,6 @@ export default function IncidentManagement({
                             )}
                           </ul>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium">Updates:</p>
-                          <div className="space-y-2 mt-1">
-                            {incident.updates.map((update) => (
-                              <div key={update.id} className="p-2 bg-muted/50 rounded-md">
-                                <div className="flex justify-between items-center mb-1">
-                                  <span className="text-xs text-muted-foreground">
-                                    {new Date(update.timestamp).toLocaleString()}
-                                  </span>
-                                  {getStatusBadge(update.status)}
-                                </div>
-                                <p className="text-sm">{update.message}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
                       </CollapsibleContent>
                     </Collapsible>
                   </TableCell>
@@ -317,14 +240,6 @@ export default function IncidentManagement({
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addUpdate(incident)}
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Update
-                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -400,6 +315,7 @@ export default function IncidentManagement({
                       <SelectContent>
                         <SelectItem value="investigating">Investigating</SelectItem>
                         <SelectItem value="identified">Identified</SelectItem>
+                        <SelectItem value="monitoring">Monitoring</SelectItem>
                         <SelectItem value="resolved">Resolved</SelectItem>
                       </SelectContent>
                     </Select>
@@ -446,91 +362,10 @@ export default function IncidentManagement({
                 )}
               />
 
-              {!currentIncident && (
-                <FormField
-                  control={form.control}
-                  name="message"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Initial Update Message</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Describe the incident and any initial findings..."
-                          className="min-h-[100px]"
-                          {...field}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              )}
-
               <DialogFooter>
                 <Button type="submit">
                   {currentIncident ? "Update Incident" : "Create Incident"}
                 </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Update Dialog */}
-      <Dialog open={isUpdateOpen} onOpenChange={setIsUpdateOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Add Update</DialogTitle>
-            <DialogDescription>
-              Add a new update to the incident.
-            </DialogDescription>
-          </DialogHeader>
-
-          <Form {...updateForm}>
-            <form onSubmit={updateForm.handleSubmit(onAddUpdate)} className="space-y-4">
-              <FormField
-                control={updateForm.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Update Status</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="investigating">Investigating</SelectItem>
-                        <SelectItem value="identified">Identified</SelectItem>
-                        <SelectItem value="resolved">Resolved</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={updateForm.control}
-                name="message"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Update Message</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Provide details about the current status..."
-                        className="min-h-[100px]"
-                        {...field}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <DialogFooter>
-                <Button type="submit">Add Update</Button>
               </DialogFooter>
             </form>
           </Form>
