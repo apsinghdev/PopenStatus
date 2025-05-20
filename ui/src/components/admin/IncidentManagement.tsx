@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Incident, IncidentStatus, Service } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -60,7 +59,7 @@ export default function IncidentManagement({
 }: IncidentManagementProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentIncident, setCurrentIncident] = useState<Incident | null>(null);
-  const [localIncidents, setLocalIncidents] = useState<Incident[]>(incidents);
+  const [localIncidents, setLocalIncidents] = useState<Incident[]>(incidents || []);
 
   const form = useForm<IncidentFormValues>({
     defaultValues: {
@@ -97,7 +96,7 @@ export default function IncidentManagement({
         status: data.status,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        affectedServices: data.affectedServices,
+        affectedServices: data.affectedServices || [],
         updates: [],
       };
       setLocalIncidents([...localIncidents, newIncident]);
@@ -216,10 +215,10 @@ export default function IncidentManagement({
                         <div>
                           <p className="text-sm font-medium">Affected Services:</p>
                           <ul className="list-disc list-inside text-sm text-muted-foreground mt-1">
-                            {incident.affectedServices.length === 0 ? (
+                            {(incident.affectedServices || []).length === 0 ? (
                               <li>None specified</li>
                             ) : (
-                              incident.affectedServices.map((serviceId) => {
+                              (incident.affectedServices || []).map((serviceId) => {
                                 const service = services.find(s => s.id === serviceId);
                                 return (
                                   <li key={serviceId}>{service?.name || "Unknown Service"}</li>
