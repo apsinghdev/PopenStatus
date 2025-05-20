@@ -13,8 +13,8 @@ export function convertResponseToServices(raw: RawService[]): Service[] {
   const statusMap: Record<string, ServiceStatus> = {
     operational: "operational",
     degraded_performance: "degraded",
-    partial_outage: "outage",
-    major_outage: "outage",
+    partial_outage: "partial_outage",
+    major_outage: "major_outage",
   };
 
   return raw.map((item, index) => {

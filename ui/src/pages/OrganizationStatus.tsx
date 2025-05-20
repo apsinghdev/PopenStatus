@@ -28,16 +28,13 @@ interface OrganizationStatus {
 const fetchOrganizationStatus = async (
   slug: string
 ): Promise<OrganizationStatus> => {
-  console.log("fetching organization status", slug);
   const response = await fetch(
     `${import.meta.env.VITE_API_URL}/organizations/${slug}/status`
   );
-  console.log("response", response);
   if (!response.ok) {
     throw new Error("Failed to fetch organization status");
   }
   const data = await response.json();
-  console.log("raw data", data);
   return convertResponseToStatusApiResponse(data);
 };
 
@@ -49,6 +46,7 @@ const OrganizationStatus = () => {
     queryKey: ["organizationStatus", slug],
     queryFn: () => fetchOrganizationStatus(slug!),
     enabled: !!slug,
+    refetchInterval: 5000, // Refetch every 5 seconds
   });
 
   // Use our custom WebSocket hook for real-time updates

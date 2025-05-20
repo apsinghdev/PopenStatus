@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Service, ServiceStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { useUser, useOrganization } from "@clerk/clerk-react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Table,
   TableBody,
@@ -62,6 +63,7 @@ export default function ServiceManagement({
 }: ServiceManagementProps) {
   const { user } = useUser();
   const { organization } = useOrganization();
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [currentService, setCurrentService] = useState<Service | null>(null);
   const [localServices, setLocalServices] =
@@ -222,6 +224,9 @@ export default function ServiceManagement({
           )
         );
 
+        // Invalidate the organization status query to trigger a refetch
+        queryClient.invalidateQueries({ queryKey: ["organizationStatus"] });
+
         toast({
           title: "Service updated",
           description: `${
@@ -272,6 +277,9 @@ export default function ServiceManagement({
           console.log("Updated services:", updatedServices);
           return updatedServices;
         });
+
+        // Invalidate the organization status query to trigger a refetch
+        queryClient.invalidateQueries({ queryKey: ["organizationStatus"] });
 
         toast({
           title: "Service created",
@@ -333,6 +341,8 @@ export default function ServiceManagement({
           setLocalServices(
             localServices.filter((service) => service.id !== id)
           );
+          // Invalidate the organization status query to trigger a refetch
+          queryClient.invalidateQueries({ queryKey: ["organizationStatus"] });
           toast({
             title: "Service deleted",
             description: "The service has been removed from the list.",
@@ -343,6 +353,8 @@ export default function ServiceManagement({
       }
 
       setLocalServices(localServices.filter((service) => service.id !== id));
+      // Invalidate the organization status query to trigger a refetch
+      queryClient.invalidateQueries({ queryKey: ["organizationStatus"] });
       toast({
         title: "Service deleted",
         description: "The service has been removed successfully.",
