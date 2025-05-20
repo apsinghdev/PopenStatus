@@ -338,3 +338,139 @@ func UpdateService(c *fiber.Ctx) error {
 
 	return c.Status(200).JSON(service)
 }
+
+type UpdateIncidentRequest struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Status      string `json:"status" validate:"omitempty,oneof=investigating identified resolved"`
+}
+
+// DeleteIncident deletes an incident
+func DeleteIncident(c *fiber.Ctx) error {
+	incidentID := c.Params("id")
+	clerkOrgID := c.Query("organization_id")
+	serviceID := c.Query("service_id")
+
+	if incidentID == "" || clerkOrgID == "" || serviceID == "" {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Incident ID, Organization ID, and Service ID are required",
+		})
+	}
+
+	db := db.Connect()
+
+	// First find the organization by its clerk_org_id
+	var org models.Organization
+	if err := db.Where("clerk_org_id = ?", clerkOrgID).First(&org).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Organization not found",
+		})
+	}
+
+	// Then verify the incident belongs to both the organization and service
+	var incident models.Incident
+	if err := db.Where("id = ? AND organization_id = ? AND service_id = ?",
+		incidentID, org.ID, serviceID).First(&incident).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Incident not found or does not belong to the specified organization and service",
+		})
+	}
+
+	// Start a transaction to ensure all deletions are atomic
+	tx := db.Begin()
+
+	// Delete all incident updates for this incident
+	if err := tx.Where("incident_id = ?", incidentID).Delete(&models.IncidentUpdate{}).Error; err != nil {
+		tx.Rollback()
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to delete incident updates",
+		})
+	}
+
+	// Delete the incident
+	if err := tx.Delete(&incident).Error; err != nil {
+		tx.Rollback()
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to delete incident",
+		})
+	}
+
+	// Commit the transaction
+	if err := tx.Commit().Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to commit transaction",
+		})
+	}
+
+	return c.Status(200).JSON(fiber.Map{
+		"message": "Incident and all related data deleted successfully",
+	})
+}
+
+// UpdateIncident updates an incident's information
+func UpdateIncident(c *fiber.Ctx) error {
+	incidentID := c.Params("id")
+	clerkOrgID := c.Query("organization_id")
+	serviceID := c.Query("service_id")
+
+	if incidentID == "" || clerkOrgID == "" || serviceID == "" {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Incident ID, Organization ID, and Service ID are required",
+		})
+	}
+
+	// Parse the update data
+	var req UpdateIncidentRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	// Validate request
+	if err := utils.Validate.Struct(req); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error":   "Validation failed",
+			"details": err.Error(),
+		})
+	}
+
+	db := db.Connect()
+
+	// First find the organization by its clerk_org_id
+	var org models.Organization
+	if err := db.Where("clerk_org_id = ?", clerkOrgID).First(&org).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Organization not found",
+		})
+	}
+
+	// Then verify the incident belongs to both the organization and service
+	var incident models.Incident
+	if err := db.Where("id = ? AND organization_id = ? AND service_id = ?",
+		incidentID, org.ID, serviceID).First(&incident).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Incident not found or does not belong to the specified organization and service",
+		})
+	}
+
+	// Update the incident fields if they are provided
+	if req.Title != "" {
+		incident.Title = req.Title
+	}
+	if req.Description != "" {
+		incident.Description = req.Description
+	}
+	if req.Status != "" {
+		incident.Status = req.Status
+	}
+
+	// Save the updated incident
+	if err := db.Save(&incident).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to update incident",
+		})
+	}
+
+	return c.Status(200).JSON(incident)
+}
