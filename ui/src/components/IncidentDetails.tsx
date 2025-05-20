@@ -1,4 +1,3 @@
-
 import { Incident, Service } from "@/lib/types";
 import { getRelativeTimeString } from "@/lib/mockData";
 import { Badge } from "@/components/ui/badge";
@@ -17,10 +16,10 @@ export function IncidentDetails({ incident, services }: IncidentDetailsProps) {
     resolved: "bg-green-100 text-green-800 border-green-300",
   }[incident.status];
 
-  const affectedServiceNames = incident.affectedServices.map((id) => {
+  const affectedServiceNames = incident?.affectedServices?.map((id) => {
     const service = services.find((s) => s.id === id);
     return service ? service.name : "Unknown Service";
-  });
+  }) || [];
 
   return (
     <div className="rounded-lg border p-4 mb-4">
