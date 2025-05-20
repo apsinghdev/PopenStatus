@@ -1,6 +1,5 @@
-
 import { useEffect, useRef, useState } from "react";
-import { Incident, Service, WebSocketEvent } from "@/lib/types";
+import { Incident, Service, WebSocketEvent, ServiceStatus } from "@/lib/types";
 import { toast } from "@/components/ui/use-toast";
 
 export function useStatusWebSocket(
@@ -52,10 +51,11 @@ export function useStatusWebSocket(
           const serviceIndex = Math.floor(Math.random() * services.length);
           const service = services[serviceIndex];
           
-          const statuses: ("operational" | "degraded" | "outage")[] = [
+          const statuses: ServiceStatus[] = [
             "operational",
             "degraded",
-            "outage",
+            "partial_outage",
+            "major_outage",
           ];
           const newStatus =
             statuses[Math.floor(Math.random() * statuses.length)];
@@ -76,7 +76,7 @@ export function useStatusWebSocket(
           toast({
             title: `${service.name} Status Change`,
             description: `Status changed to ${newStatus}`,
-            variant: newStatus === "outage" ? "destructive" : "default",
+            variant: (newStatus === "partial_outage" || newStatus === "major_outage") ? "destructive" : "default",
           });
         }
       }, 30000); // Update every 30 seconds
