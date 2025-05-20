@@ -3,6 +3,7 @@ package services
 import (
 	"github.com/apsinghdev/PopenStatus/api/pkg/db"
 	"github.com/apsinghdev/PopenStatus/api/pkg/models"
+	"github.com/apsinghdev/PopenStatus/api/pkg/utils"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -51,16 +52,60 @@ func ListServices(c *fiber.Ctx) error {
 	return c.Status(200).JSON(services)
 }
 
+type CreateIncidentRequest struct {
+	Title          string `json:"title" validate:"required"`
+	Description    string `json:"description"`
+	Status         string `json:"status" validate:"required,oneof=investigating identified resolved"`
+	ServiceID      string `json:"service_id" validate:"required"`
+	OrganizationID string `json:"organization_id" validate:"required"`
+}
+
 // func to create an incident
 func CreateIncident(c *fiber.Ctx) error {
-	var incident models.Incident
-	if err := c.BodyParser(&incident); err != nil {
-		return err
+	// Parse request body
+	var req CreateIncidentRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
 	}
 
-	db := db.Connect()
-	db.Create(&incident)
-	return c.Status(201).JSON(incident)
+	// Validate request
+	if err := utils.Validate.Struct(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Validation failed",
+			"details": err.Error(),
+		})
+	}
+
+	// Get database instance
+	database := db.Connect()
+
+	// Get organization by Clerk ID
+	var organization models.Organization
+	if err := database.Where("clerk_org_id = ?", req.OrganizationID).First(&organization).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Organization not found",
+		})
+	}
+
+	// Create incident
+	incident := models.Incident{
+		Title:          req.Title,
+		Description:    req.Description,
+		Status:         req.Status,
+		ServiceID:      req.ServiceID,
+		OrganizationID: organization.ID,
+	}
+
+	// Save to database
+	if err := database.Create(&incident).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create incident",
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(incident)
 }
 
 // func to list incidents

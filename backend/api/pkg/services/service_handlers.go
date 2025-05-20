@@ -5,11 +5,9 @@ import (
 
 	"github.com/apsinghdev/PopenStatus/api/pkg/db"
 	"github.com/apsinghdev/PopenStatus/api/pkg/models"
-	"github.com/go-playground/validator/v10"
+	"github.com/apsinghdev/PopenStatus/api/pkg/utils"
 	"github.com/gofiber/fiber/v2"
 )
-
-var validate = validator.New()
 
 type CreateServiceRequest struct {
 	Name           string `json:"name" validate:"required"`
@@ -29,7 +27,7 @@ func HandleCreateService(c *fiber.Ctx) error {
 	}
 
 	// Validate request
-	if err := validate.Struct(req); err != nil {
+	if err := utils.Validate.Struct(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error":   "Validation failed",
 			"details": err.Error(),
