@@ -40,7 +40,7 @@ import {
 import { CheckCircle, AlertTriangle, AlertCircle, Pencil, Trash2, Plus, ChevronDown } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { useForm } from "react-hook-form";
-import { Checkbox } from "@/components/ui/checkbox";
+import { useOrganization } from "@clerk/clerk-react";
 
 interface IncidentManagementProps {
   incidents: Incident[];
@@ -49,7 +49,9 @@ interface IncidentManagementProps {
 
 type IncidentFormValues = {
   title: string;
+  description: string;
   status: IncidentStatus;
+  organization_id: string;
   affectedServices: string[];
 };
 
@@ -60,62 +62,111 @@ export default function IncidentManagement({
   const [isOpen, setIsOpen] = useState(false);
   const [currentIncident, setCurrentIncident] = useState<Incident | null>(null);
   const [localIncidents, setLocalIncidents] = useState<Incident[]>(incidents || []);
+  const { organization } = useOrganization();
+  const organizationId = organization?.id || "";
 
   const form = useForm<IncidentFormValues>({
-    defaultValues: {
+    defaultValues: {  
       title: "",
-      status: "investigating",
+      description: "",
+      status: "investigating" as IncidentStatus,
+      organization_id: "",
       affectedServices: [],
     },
   });
 
-  const onSubmit = (data: IncidentFormValues) => {
-    if (currentIncident) {
-      // Update existing incident
-      const updatedIncidents = localIncidents.map((incident) =>
-        incident.id === currentIncident.id
-          ? {
-              ...incident,
-              title: data.title,
-              status: data.status,
-              affectedServices: data.affectedServices,
-              updatedAt: new Date().toISOString(),
-            }
-          : incident
-      );
-      setLocalIncidents(updatedIncidents);
-      toast({
-        title: "Incident updated",
-        description: `${data.title} has been updated successfully.`,
-      });
-    } else {
-      // Create new incident
-      const newIncident: Incident = {
-        id: `incident-${Date.now()}`,
+  const onSubmit = async (data: IncidentFormValues) => {
+    try {
+      // Log form data
+      console.log('Form Data:', {
         title: data.title,
+        description: data.description,
         status: data.status,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        affectedServices: data.affectedServices || [],
-        updates: [],
-      };
-      setLocalIncidents([...localIncidents, newIncident]);
+        organization_id: organizationId,
+        affectedServices: data.affectedServices
+      });
+
+      // Validate required fields
+      if (!data.title.trim() || !data.status || !data.organization_id || !data.affectedServices?.length) {
+        toast({
+          title: "Validation Error",
+          description: "Please fill in all required fields including at least one affected service.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (currentIncident) {
+        // Update existing incident
+        const updatedIncidents = localIncidents.map((incident) =>
+          incident.id === currentIncident.id
+            ? {
+                ...incident,
+                title: data.title,
+                status: data.status,
+                affectedServices: data.affectedServices,
+                updatedAt: new Date().toISOString(),
+              }
+            : incident
+        );
+        setLocalIncidents(updatedIncidents);
+        toast({
+          title: "Incident updated",
+          description: `${data.title} has been updated successfully.`,
+        });
+      } else {
+        // Create new incident
+        const requestData = {
+          title: data.title,
+          description: data.description,
+          status: data.status.toLowerCase(), // Ensure lowercase status
+          organization_id: organizationId,
+          service_id: data.affectedServices[0] || "", // Use the first affected service as the primary service
+          affected_services: data.affectedServices,
+        };
+
+        console.log('Request Data:', requestData); // Log the actual request data
+
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/incidents/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.message || 'Failed to create incident');
+        }
+
+        const newIncident = await response.json();
+        setLocalIncidents([...localIncidents, newIncident]);
+        toast({
+          title: "Incident created",
+          description: `${data.title} has been added successfully.`,
+        });
+      }
+      setIsOpen(false);
+      setCurrentIncident(null);
+      form.reset();
+    } catch (error) {
       toast({
-        title: "Incident created",
-        description: `${data.title} has been added successfully.`,
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create incident. Please try again.",
+        variant: "destructive",
       });
     }
-    setIsOpen(false);
-    setCurrentIncident(null);
-    form.reset();
   };
 
   const editIncident = (incident: Incident) => {
     setCurrentIncident(incident);
     form.reset({
-      title: incident.title,
+      title: incident.title || "",
+      description: "",
       status: incident.status,
-      affectedServices: incident.affectedServices,
+      organization_id: organizationId,
+      affectedServices: incident.affectedServices || [],
     });
     setIsOpen(true);
   };
@@ -133,7 +184,9 @@ export default function IncidentManagement({
     setCurrentIncident(null);
     form.reset({
       title: "",
-      status: "investigating",
+      description: "",
+      status: "investigating" as IncidentStatus,
+      organization_id: organizationId,
       affectedServices: [],
     });
     setIsOpen(true);
@@ -266,8 +319,8 @@ export default function IncidentManagement({
 
       {/* Create/Edit Incident Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader className="pb-2">
             <DialogTitle>
               {currentIncident ? "Edit Incident" : "Create New Incident"}
             </DialogTitle>
@@ -279,16 +332,60 @@ export default function IncidentManagement({
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title <span className="text-red-500">*</span></FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g. Database Issues"
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status <span className="text-red-500">*</span></FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || "investigating"}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="investigating">Investigating</SelectItem>
+                          <SelectItem value="identified">Identified</SelectItem>
+                          <SelectItem value="resolved">Resolved</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <FormField
                 control={form.control}
-                name="title"
+                name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Incident Title</FormLabel>
+                    <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="e.g. Database Connectivity Issues"
+                        placeholder="Describe the incident details"
                         {...field}
                       />
                     </FormControl>
@@ -298,54 +395,30 @@ export default function IncidentManagement({
 
               <FormField
                 control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="investigating">Investigating</SelectItem>
-                        <SelectItem value="identified">Identified</SelectItem>
-                        <SelectItem value="monitoring">Monitoring</SelectItem>
-                        <SelectItem value="resolved">Resolved</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="affectedServices"
                 render={() => (
                   <FormItem>
-                    <FormLabel>Affected Services</FormLabel>
-                    <div className="border rounded-md p-3 space-y-2">
+                    <FormLabel>Affected Service <span className="text-red-500">*</span></FormLabel>
+                    <div className="border rounded-md p-2 space-y-1 max-h-[150px] overflow-y-auto">
                       {services.length === 0 ? (
                         <p className="text-sm text-muted-foreground">
-                          No services available. Please create services first.
+                          No services available
                         </p>
                       ) : (
                         services.map((service) => (
                           <div key={service.id} className="flex items-center space-x-2">
-                            <Checkbox
+                            <input
+                              type="radio"
                               id={`service-${service.id}`}
-                              onCheckedChange={(checked) => {
-                                const currentServices = form.getValues("affectedServices") || [];
-                                const updatedServices = checked
-                                  ? [...currentServices, service.id]
-                                  : currentServices.filter((id) => id !== service.id);
-                                form.setValue("affectedServices", updatedServices);
+                              name="affectedService"
+                              checked={(form.getValues("affectedServices") || [])[0] === service.id}
+                              onChange={() => {
+                                form.setValue("affectedServices", [service.id], {
+                                  shouldValidate: true,
+                                  shouldDirty: true,
+                                });
                               }}
-                              checked={(form.getValues("affectedServices") || []).includes(service.id)}
+                              className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
                             />
                             <label
                               htmlFor={`service-${service.id}`}
@@ -361,7 +434,7 @@ export default function IncidentManagement({
                 )}
               />
 
-              <DialogFooter>
+              <DialogFooter className="pt-2">
                 <Button type="submit">
                   {currentIncident ? "Update Incident" : "Create Incident"}
                 </Button>
