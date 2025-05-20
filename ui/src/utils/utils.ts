@@ -128,6 +128,7 @@ export function convertResponseToStatusApiResponse(rawData: RawData): {
       i.Updates && i.Updates.length > 0
         ? i.Updates[i.Updates.length - 1].CreatedAt
         : i.CreatedAt,
+    serviceName: i.Service?.Name || '',
   }));
 
   const timelineEvents: TimelineEvent[] = incidents

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Incident, IncidentStatus, Service } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,6 +65,10 @@ export default function IncidentManagement({
   const { organization } = useOrganization();
   const organizationId = organization?.id || "";
 
+  useEffect(() => {
+    setLocalIncidents(incidents || []);
+  }, [incidents]);
+
   const form = useForm<IncidentFormValues>({
     defaultValues: {  
       title: "",
@@ -83,7 +87,7 @@ export default function IncidentManagement({
         description: data.description,
         status: data.status,
         organization_id: organizationId,
-        affectedServices: data.affectedServices
+        affectedServices: data.affectedServices,
       });
 
       // Validate required fields
@@ -119,9 +123,9 @@ export default function IncidentManagement({
         const requestData = {
           title: data.title,
           description: data.description,
-          status: data.status.toLowerCase(), // Ensure lowercase status
+          status: data.status.toLowerCase(),
           organization_id: organizationId,
-          service_id: data.affectedServices[0] || "", // Use the first affected service as the primary service
+          service_id: data.affectedServices[0] || "",
           affected_services: data.affectedServices,
         };
 
@@ -141,7 +145,31 @@ export default function IncidentManagement({
         }
 
         const newIncident = await response.json();
-        setLocalIncidents([...localIncidents, newIncident]);
+        console.log('Raw API Response:', newIncident);
+
+        // Format the incident to match our type definition
+        const formattedIncident: Incident = {
+          id: newIncident.id,
+          title: newIncident.Title || newIncident.name || '',
+          status: (newIncident.status || 'investigating') as IncidentStatus,
+          createdAt: newIncident.created_at || new Date().toISOString(),
+          updatedAt: newIncident.updated_at || new Date().toISOString(),
+          updates: newIncident.updates || [],
+          affectedServices: Array.isArray(newIncident.affected_services) 
+            ? newIncident.affected_services 
+            : newIncident.service_id
+              ? [newIncident.service_id] 
+              : []
+        };
+        console.log('Formatted Incident:', formattedIncident);
+        console.log('Title:', formattedIncident.title);
+        console.log('Affected Services:', formattedIncident.affectedServices);
+
+        setLocalIncidents(prevIncidents => {
+          const updatedIncidents = [...prevIncidents, formattedIncident];
+          console.log('Updated Incidents:', updatedIncidents);
+          return updatedIncidents;
+        });
         toast({
           title: "Incident created",
           description: `${data.title} has been added successfully.`,
@@ -266,19 +294,10 @@ export default function IncidentManagement({
                       </div>
                       <CollapsibleContent className="mt-2 pl-6 border-l-2 border-muted space-y-2">
                         <div>
-                          <p className="text-sm font-medium">Affected Services:</p>
-                          <ul className="list-disc list-inside text-sm text-muted-foreground mt-1">
-                            {(incident.affectedServices || []).length === 0 ? (
-                              <li>None specified</li>
-                            ) : (
-                              (incident.affectedServices || []).map((serviceId) => {
-                                const service = services.find(s => s.id === serviceId);
-                                return (
-                                  <li key={serviceId}>{service?.name || "Unknown Service"}</li>
-                                );
-                              })
-                            )}
-                          </ul>
+                          <p className="text-sm font-medium">Service:</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {incident.serviceName || 'No service specified'}
+                          </p>
                         </div>
                       </CollapsibleContent>
                     </Collapsible>

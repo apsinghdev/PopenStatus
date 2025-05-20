@@ -30,6 +30,7 @@ const fetchOrganizationStatus = async (
     throw new Error("Failed to fetch organization status");
   }
   const data = await response.json();
+  console.log('API Response:', data);
   return convertResponseToStatusApiResponse(data);
 };
 

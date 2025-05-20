@@ -25,6 +25,7 @@ export interface Incident {
   updatedAt: string; // ISO date string
   updates: IncidentUpdate[];
   affectedServices: string[];
+  serviceName?: string;
 }
 
 export interface TimelineEvent {

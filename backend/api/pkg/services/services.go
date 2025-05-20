@@ -181,6 +181,7 @@ func GetOrganizationStatus(c *fiber.Ctx) error {
 	var incidents []models.Incident
 	if err := db.Where("organization_id = ?", org.ID).
 		Preload("Updates").
+		Preload("Service").
 		Find(&incidents).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"error": "Failed to fetch incidents",
