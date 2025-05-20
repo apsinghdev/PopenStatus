@@ -112,7 +112,35 @@ func CreateIncident(c *fiber.Ctx) error {
 func ListIncidents(c *fiber.Ctx) error {
 	var incidents []models.Incident
 	db := db.Connect()
-	result := db.Find(&incidents)
+
+	// Get organization ID and service ID from query parameters
+	clerkOrgID := c.Query("organization_id")
+	serviceID := c.Query("service_id")
+
+	if clerkOrgID == "" {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Organization ID is required",
+		})
+	}
+
+	// First find the organization by its clerk_org_id
+	var org models.Organization
+	if err := db.Where("clerk_org_id = ?", clerkOrgID).First(&org).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Organization not found",
+		})
+	}
+
+	// Build the query
+	query := db.Where("organization_id = ?", org.ID)
+
+	// Add service ID filter if provided
+	if serviceID != "" {
+		query = query.Where("service_id = ?", serviceID)
+	}
+
+	// Execute the query
+	result := query.Find(&incidents)
 	if result.Error != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"error": "Failed to fetch incidents",
