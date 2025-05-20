@@ -239,13 +239,53 @@ export default function IncidentManagement({
     setIsOpen(true);
   };
 
-  const deleteIncident = (id: string) => {
-    setLocalIncidents(localIncidents.filter((incident) => incident.id !== id));
-    toast({
-      title: "Incident deleted",
-      description: "The incident has been removed successfully.",
-      variant: "destructive",
-    });
+  const deleteIncident = async (id: string) => {
+    try {
+      // Get the incident to be deleted to access its service name
+      const incidentToDelete = localIncidents.find(incident => incident.id === id);
+      if (!incidentToDelete) {
+        throw new Error('Incident not found');
+      }
+
+      // Get the service ID by finding the service with matching name
+      const selectedService = services.find(service => service.name === incidentToDelete.serviceName);
+      const serviceId = selectedService?.id;
+
+      if (!serviceId) {
+        throw new Error('Service ID not found for the incident');
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/incidents/delete/${id}?organization_id=${organizationId}&service_id=${serviceId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || 'Failed to delete incident');
+      }
+
+      // Update local state only after successful API call
+      setLocalIncidents(prevIncidents => 
+        prevIncidents.filter(incident => incident.id !== id)
+      );
+
+      toast({
+        title: "Incident deleted",
+        description: "The incident has been removed successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete incident. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const openCreateDialog = () => {
