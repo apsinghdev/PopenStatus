@@ -18,12 +18,17 @@ export function ServiceCard({ service }: ServiceCardProps) {
     },
     degraded: {
       color: "bg-yellow-400",
-      text: "Degraded",
+      text: "Degraded Performance",
       textColor: "text-yellow-700",
     },
-    outage: {
+    partial_outage: {
+      color: "bg-orange-500",
+      text: "Partial Outage",
+      textColor: "text-orange-700",
+    },
+    major_outage: {
       color: "bg-red-500",
-      text: "Outage",
+      text: "Major Outage",
       textColor: "text-red-700",
     },
   };

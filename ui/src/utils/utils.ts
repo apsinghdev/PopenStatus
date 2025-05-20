@@ -93,12 +93,31 @@ export function convertResponseToStatusApiResponse(rawData: RawData): {
   organization: { id: number; name: string; slug: string };
   timelineEvents: TimelineEvent[];
 } {
-  const services: Service[] = rawData.services.map((s: any) => ({
-    id: String(s.ID),
-    name: s.Name,
-    status: s.Status as Service["status"],
-    lastChecked: new Date().toISOString(), // or use s.UpdatedAt if available
-  }));
+  const services: Service[] = rawData.services.map((s: any) => {
+    // Map the status values correctly
+    let status: Service["status"] = "operational";
+    switch (s.Status) {
+      case "major_outage":
+        status = "major_outage";
+        break;
+      case "partial_outage":
+        status = "partial_outage";
+        break;
+      case "degraded":
+        status = "degraded";
+        break;
+      case "operational":
+        status = "operational";
+        break;
+    }
+
+    return {
+      id: String(s.ID),
+      name: s.Name,
+      status: status,
+      lastChecked: s.UpdatedAt || new Date().toISOString(),
+    };
+  });
 
   const incidents: Incident[] = rawData.incidents.map((i: any) => ({
     id: String(i.ID),

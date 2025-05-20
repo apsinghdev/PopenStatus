@@ -47,6 +47,7 @@ const OrganizationStatus = () => {
     queryFn: () => fetchOrganizationStatus(slug!),
     enabled: !!slug,
     refetchInterval: 5000, // Refetch every 5 seconds
+    staleTime: 0, // Consider data stale immediately to ensure fresh data
   });
 
   // Use our custom WebSocket hook for real-time updates
