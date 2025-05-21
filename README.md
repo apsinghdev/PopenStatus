@@ -150,7 +150,7 @@ You can get a `DATABASE_URL` from [here](https://console.neon.tech/app/projects)
    go run cmd/seed/main.go
    ```
 
-Note: Make sure your `DATABASE_URL` in the `.env` file is correctly set before running migrations.
+Note: Please make sure your `DATABASE_URL` in the `.env` file is correctly set before running migrations.
 
 
 Now you can access this application of `http://localhost:8080`.
