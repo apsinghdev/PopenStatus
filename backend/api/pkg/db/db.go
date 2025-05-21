@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	// "github.com/apsinghdev/PopenStatus/api/pkg/models"
@@ -13,14 +14,20 @@ import (
 var dbInstance *gorm.DB
 
 func Connect() *gorm.DB {
-	// Load env variables from .env file
-	err := godotenv.Load()
-	if err != nil {
-		panic("Failed to load .env file")
+	// Load .env file only in development
+	if os.Getenv("ENV") == "dev" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Printf("Warning: Failed to load .env file: %v", err)
+		}
 	}
 
-	connStr := os.Getenv("DATABASE_URL")
-	db, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		panic("DATABASE_URL environment variable is not set")
+	}
+
+	db, err := gorm.Open(postgres.Open(dbURL), &gorm.Config{})
 	if err != nil {
 		panic("Failed to connect to database")
 	}

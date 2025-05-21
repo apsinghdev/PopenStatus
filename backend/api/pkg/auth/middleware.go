@@ -12,11 +12,14 @@ import (
 )
 
 func ClerkMiddleware() fiber.Handler {
-	// Load env file
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	// Load .env file only in development
+	if os.Getenv("ENV") == "dev" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Printf("Warning: Failed to load .env file: %v", err)
+		}
 	}
+
 	client, _ := clerk.NewClient(os.Getenv("CLERK_SECRET_KEY"))
 
 	return func(c *fiber.Ctx) error {
