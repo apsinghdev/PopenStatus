@@ -15,39 +15,41 @@ import InvitationHandler from "./pages/InvitationHandler";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  
   return (
-    <BrowserRouter>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route
-            path="/create-organization"
-            element={
-              <CreateOrganizationPage />
-            }
-          />
-          <Route path="/org/:slug" element={<OrganizationStatus />} />
-          <Route path="/org/:slug/settings" element={<OrganizationProfilePage />} />
-          <Route path="/org/:slug/admin-dashboard" element={<AdminDashboard />} />
-          <Route path="/invitation" element={<InvitationHandler />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </TooltipProvider>
-    </BrowserRouter>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route
+          path="/create-organization"
+          element={
+            <CreateOrganizationPage />
+          }
+        />
+        <Route path="/org/:slug" element={<OrganizationStatus />} />
+        <Route path="/org/:slug/settings" element={<OrganizationProfilePage />} />
+        <Route path="/org/:slug/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/invitation" element={<InvitationHandler />} />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </TooltipProvider>
   );
 };
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ClerkProvider 
-      publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
-    >
-      <AppContent />
-    </ClerkProvider>
+    <BrowserRouter>
+      <ClerkProvider 
+        publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
+        appearance={{
+          baseTheme: undefined
+        }}
+      >
+        <AppContent />
+      </ClerkProvider>
+    </BrowserRouter>
   </QueryClientProvider>
 );
 
