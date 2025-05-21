@@ -1,0 +1,6 @@
+[build]
+builder = "nixpacks"
+buildCommand = "cd backend/api && go mod download && go build -o api ./cmd/api"
+
+[deploy]
+startCommand = "cd backend/api && ./api"
