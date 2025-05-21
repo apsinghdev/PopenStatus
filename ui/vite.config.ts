@@ -8,7 +8,9 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    allowedHosts: ['crucial-poorly-burro.ngrok-free.app'],
+    allowedHosts: mode === 'development' 
+      ? ['crucial-poorly-burro.ngrok-free.app']
+      : ['popen-status.vercel.app'],
   },
   plugins: [
     react(),
