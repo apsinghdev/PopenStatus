@@ -15,9 +15,18 @@ Before you begin, ensure you have the following installed:
 ```
 PopenStatus/
 ├── ui/           # Frontend application
+│   └── src/
+│       ├── components/  # ShadcnUI-based components
+│       ├── context/     # Org/WebSocket state
+│       └── pages/       # Dashboard, PublicPage
 ├── backend/      # Backend services
 │   ├── api/     # REST API (Go)
-│   ├── ws/      # WebSocket service (WIP)
+│   │   └── pkg/
+│   │       ├── auth/    # Clerk JWT middleware
+│   │       ├── models/  # GORM structs
+│   │       ├── routes/  # REST/WebSocket handlers
+│   │       └── ws/      # WebSocket server logic (WIP method-1)
+│   ├── ws/      # WebSocket service (WIP method-2)
 │   └── nginx/   # Nginx configuration (WIP)
 ```
 
