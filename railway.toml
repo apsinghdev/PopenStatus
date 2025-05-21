@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "apt-get update && apt-get install -y golang-go && cd backend/api && go mod download && go build -o api ./cmd/api"
+buildCommand = "apt-get update && apt-get install -y golang-go && cd backend/api && go mod download && go build -o api main.go"
 
 [deploy]
 startCommand = "cd backend/api && ./api"
