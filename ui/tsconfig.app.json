@@ -7,7 +7,7 @@
     "types": ["node"],
     "jsx": "react-jsx",
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "emitDeclarationOnly": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
   "exclude": ["src/**/__tests__/*"]

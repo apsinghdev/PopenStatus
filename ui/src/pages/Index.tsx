@@ -1,6 +1,22 @@
-import { SignInButton } from "@clerk/clerk-react";
+import { SignInButton, useOrganization } from "@clerk/clerk-react";
+import { useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { organization } = useOrganization();
+
+  console.log("organization in index", organization)
+  useEffect(() => {
+    const ticket = searchParams.get('__clerk_ticket');
+    const status = searchParams.get('__clerk_status');
+    
+    if (ticket && status) {
+      navigate(`/invitation?__clerk_ticket=${ticket}&__clerk_status=${status}`);
+    }
+  }, [searchParams, navigate]);
+
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
@@ -8,7 +24,7 @@ const Index = () => {
         <p className="text-lg text-muted-foreground mb-8">
           Your all-in-one status page solution
         </p>
-        <SignInButton mode="modal">
+        <SignInButton mode="modal" forceRedirectUrl="/create-organization">
           <button className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md">
             Sign In
           </button>
