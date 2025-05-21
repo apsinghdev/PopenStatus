@@ -1,6 +1,6 @@
 ## Welcome to PopenStatus!
 
-PopenStatus is a full-stack application with a modern TypeScript/Vite frontend and a robust backend system.
+PopenStatus is a full-stack application with a modern TypeScript/Vite frontend and a robust GO backend system.
 
 ## Prerequisites
 
@@ -154,5 +154,7 @@ Note: Make sure your `DATABASE_URL` in the `.env` file is correctly set before r
 
 
 Now you can access this application of `http://localhost:8080`.
+
+If there's any question/doubt related to this project, please feel free to ping me @ [ajeepratapsingh351@gmail.com](ajeepratapsingh351@gmail.com).
 
 Thank you for reading!
