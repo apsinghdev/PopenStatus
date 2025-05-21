@@ -1,6 +1,17 @@
-## Welcome to PopenStatus!
+# Welcome to PopenStatus!
 
 PopenStatus is a full-stack application with a modern TypeScript/Vite frontend and a robust GO backend system.
+
+## Test this app
+
+1. Please visit here: [https://popen-status.vercel.app/](https://popen-status.vercel.app/)
+
+2. To sign in, please use these credentials
+
+```
+Email: test@gmail.com
+Password: test
+```
 
 ## Prerequisites
 
