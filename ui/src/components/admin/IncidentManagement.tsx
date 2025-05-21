@@ -68,7 +68,10 @@ export default function IncidentManagement({
   const organizationId = organization?.id || "";
 
   useEffect(() => {
-    setLocalIncidents(incidents || []);
+    // Only set localIncidents if it's empty and we have incidents
+    if (localIncidents.length === 0 && incidents?.length > 0) {
+      setLocalIncidents(incidents);
+    }
   }, [incidents]);
 
   const form = useForm<IncidentFormValues>({
@@ -193,7 +196,7 @@ export default function IncidentManagement({
         const formattedIncident: Incident = {
           id: newIncident.id,
           title: newIncident.Title || newIncident.name || '',
-          status: (newIncident.status || 'investigating') as IncidentStatus,
+          status: data.status as IncidentStatus,
           createdAt: newIncident.created_at || new Date().toISOString(),
           updatedAt: newIncident.updated_at || new Date().toISOString(),
           updates: newIncident.updates || [],
