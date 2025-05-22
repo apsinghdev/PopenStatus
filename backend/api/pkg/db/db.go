@@ -15,13 +15,13 @@ var dbInstance *gorm.DB
 
 func Connect() *gorm.DB {
 	// Load .env file only in development
-	// if os.Getenv("ENV") == "dev" {
+	if os.Getenv("ENV") == "dev" {
 		err := godotenv.Load()
 		fmt.Println("🔑 Loaded .env file", err)
 		if err != nil {
 			log.Printf("Warning: Failed to load .env file: %v", err)
 		}
-	// }
+	}
 
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
