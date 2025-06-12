@@ -166,6 +166,5 @@ Note: Please make sure your `DATABASE_URL` in the `.env` file is correctly set b
 
 Now you can access this application of `http://localhost:8080`.
 
-If there's any question/doubt related to this project, please feel free to ping me @ [ajeepratapsingh351@gmail.com](ajeepratapsingh351@gmail.com).
 
 Thank you for reading!
